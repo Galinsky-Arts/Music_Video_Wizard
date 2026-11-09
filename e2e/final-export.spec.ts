@@ -33,6 +33,7 @@ test("locked edit renders through the durable queue and downloads a verified mas
     expect(responses.filter(response => [400, 409].includes(response.status()))).toHaveLength(1);
     const queued = await responses.find(response => response.status() === 202)!.json() as { jobId: string };
     expect(await db.generationJob.count({ where: { projectId: fixture.projectId } })).toBe(1);
+    expect(await db.asset.count({ where: { projectId: fixture.projectId, kind: "RENDER_MASTER" } })).toBe(1);
     // Reconnect the queue before execution to prove the queued work survives producer shutdown.
     await stopJobQueue();
     registerFinalMasterRenderHandler();

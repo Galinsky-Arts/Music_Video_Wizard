@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   AssetKind,
   AssetStatus,
@@ -328,29 +329,19 @@ export async function queueFinalMasterRender(input:{
       where:{id:input.projectId},
       select:{workspaceId:true}
     });
-    let asset=await tx.asset.findFirst({
+    const asset=await tx.asset.findFirst({
       where:{
         projectId:input.projectId,
         kind:AssetKind.RENDER_MASTER
       },
       orderBy:{createdAt:"asc"}
     });
-    if(!asset){
-      asset=await tx.asset.create({
-        data:{
-          workspaceId:project.workspaceId,
-          projectId:input.projectId,
-          kind:AssetKind.RENDER_MASTER,
-          name:"Master render"
-        }
-      });
-    }
     return {
       workspaceId:project.workspaceId,
       stepId:current.step.id,
       manifest,
       manifestFingerprint:fingerprint,
-      renderAssetId:asset.id
+      renderAssetId:asset?.id??randomUUID()
     };
   });
 
@@ -426,6 +417,19 @@ export async function queueFinalMasterRender(input:{
         select:{id:true}
       });
       if(active) throw new FinishExportConflictError("A final-master render job is already active.");
+      // Create the logical asset only after claiming the revision. A losing
+      // concurrent request must not leave an earlier empty asset in history.
+      await tx.asset.upsert({
+        where:{id:context.renderAssetId},
+        create:{
+          id:context.renderAssetId,
+          workspaceId:context.workspaceId,
+          projectId:input.projectId,
+          kind:AssetKind.RENDER_MASTER,
+          name:"Master render"
+        },
+        update:{}
+      });
       await tx.wizardStepState.update({
         where:{id:context.stepId},
         data:{
