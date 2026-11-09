@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect,useMemo,useState } from "react";
+import { useCallback,useEffect,useMemo,useState } from "react";
 import { useRouter } from "next/navigation";
 
 type RenderManifest={
@@ -62,6 +62,7 @@ type MasterView={
   createdAt:string;
   readyAt:string|null;
   url:string;
+  downloadUrl:string;
 }|null;
 
 type HistoryView={
@@ -76,6 +77,7 @@ type HistoryView={
   createdAt:string;
   readyAt:string|null;
   current:boolean;
+  downloadUrl:string|null;
 };
 
 type FinishExportState={
@@ -142,23 +144,38 @@ export function FinishExportEditor(
     [manifest]
   );
 
-  async function refresh(){
+  const refresh=useCallback(async()=>{
     const response=await fetch(
       `/api/projects/${props.projectId}/finish-export`,
       {cache:"no-store"}
     );
-    if(!response.ok) return;
+    if(!response.ok) throw new Error("Could not refresh export status. Try again.");
     const next=await response.json() as FinishExportState;
     setState(next);
-  }
+    return next;
+  },[props.projectId]);
 
   useEffect(()=>{
     if(!active) return;
-    const timer=window.setInterval(async()=>{
-      await refresh();
-    },2500);
-    return ()=>window.clearInterval(timer);
-  },[active]);
+    let cancelled=false;
+    let timer:number;
+    async function poll(){
+      try{
+        const next=await refresh();
+        if(cancelled) return;
+        setMessage(null);
+        if(next.recentJob?.status!=="QUEUED"&&next.recentJob?.status!=="RUNNING"){
+          router.refresh();
+          return;
+        }
+      }catch{
+        if(!cancelled) setMessage("Could not refresh export status. Retrying…");
+      }
+      if(!cancelled) timer=window.setTimeout(poll,2500);
+    }
+    timer=window.setTimeout(poll,2500);
+    return ()=>{cancelled=true;window.clearTimeout(timer);};
+  },[active,refresh,router]);
 
   async function post(
     path:string,
@@ -195,6 +212,21 @@ export function FinishExportEditor(
             :success
       );
       router.refresh();
+    }catch{
+      setMessage("Could not confirm the export action. Refresh status before retrying.");
+    }finally{
+      setBusy(false);
+    }
+  }
+
+  async function checkStatus(){
+    setBusy(true);
+    try{
+      await refresh();
+      setMessage(null);
+      router.refresh();
+    }catch{
+      setMessage("Could not refresh export status. Try again.");
     }finally{
       setBusy(false);
     }
@@ -244,6 +276,7 @@ export function FinishExportEditor(
           <span>{state.prepared?"Manifest prepared":"Prepare required"}</span>
           <span>{state.currentMaster?"Master verified":"No current master"}</span>
           <span>{active?"Rendering":"Renderer idle"}</span>
+          <button className="secondaryButton" disabled={busy} onClick={checkStatus}>Refresh status</button>
         </div>
       </section>
 
@@ -344,7 +377,7 @@ export function FinishExportEditor(
             </div>
             <a
               className="primaryButton"
-              href={state.currentMaster.url}
+              href={state.currentMaster.downloadUrl}
               download
             >
               Download MP4
@@ -400,13 +433,14 @@ export function FinishExportEditor(
                   {shortHash(item.checksumSha256)}
                 </code>
                 <small>{new Date(item.createdAt).toLocaleString()}</small>
+                {item.downloadUrl?<a href={item.downloadUrl} download>Download v{item.versionNumber}</a>:null}
               </article>
             ))}
           </div>
         </section>
       ):null}
 
-      {message?<p className="formMessage">{message}</p>:null}
+      {message?<p className="formMessage" role="status">{message}</p>:null}
 
       {!state.wizardLocked&&
         state.wizardStatus==="COMPLETED"&&

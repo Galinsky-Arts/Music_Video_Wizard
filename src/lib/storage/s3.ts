@@ -11,6 +11,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { attachmentDisposition } from "./disposition";
 import type { AssetStorage, PutAssetFileInput, PutAssetInput, StoredAsset } from "./types";
 
 export interface S3AssetStorageOptions {
@@ -133,13 +134,15 @@ export class S3AssetStorage implements AssetStorage {
 
   async getSignedReadUrl(
     key: string,
-    expiresInSeconds: number
+    expiresInSeconds: number,
+    downloadFileName?: string
   ): Promise<string> {
     return getSignedUrl(
       this.client,
       new GetObjectCommand({
         Bucket: this.options.bucket,
-        Key: key
+        Key: key,
+        ResponseContentDisposition: downloadFileName ? attachmentDisposition(downloadFileName) : undefined
       }),
       { expiresIn: expiresInSeconds }
     );

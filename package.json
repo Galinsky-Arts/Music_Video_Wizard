@@ -45,7 +45,8 @@
     "ops:asset-integrity": "tsx scripts/asset-integrity.ts",
     "ops:health": "tsx scripts/ops-health.ts",
     "start:production": "prisma migrate deploy && next start -H 0.0.0.0 -p ${PORT:-10000}",
-    "ops:production-gate": "tsx scripts/ops-production-gate.ts"
+    "ops:production-gate": "tsx scripts/ops-production-gate.ts",
+    "test:render": "tsx scripts/render-smoke.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

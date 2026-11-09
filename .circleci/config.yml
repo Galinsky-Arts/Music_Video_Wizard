@@ -121,6 +121,9 @@ jobs:
           name: acceptance behavioral/regression tests
           command: npm run test:acceptance
       - run:
+          name: Real FFmpeg delivery acceptance
+          command: npm run test:render
+      - run:
           name: Production build
           command: npm run build
       - store_artifacts:
@@ -161,7 +164,7 @@ jobs:
           command: npm run db:deploy
       - run:
           name: Install browser dependencies
-          command: npx playwright install --with-deps chromium
+          command: sudo apt-get update && sudo apt-get install -y ffmpeg && npx playwright install --with-deps chromium
       - run:
           name: Real Playwright browser E2E
           command: npm run test:e2e

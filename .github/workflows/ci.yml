@@ -52,6 +52,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install --disable-pip-version-check -r analysis/requirements.txt imageio-ffmpeg
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: echo "AUDIO_ANALYSIS_FFMPEG=$(python -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')" >> "$GITHUB_ENV"
       - run: npm install --global npm@11.19.1
       - run: npm install
@@ -79,5 +80,6 @@ jobs:
       - run: npm run test:sequence-map
       - run: npm run test:storyboard
       - run: npm run test:queue
+      - run: npm run test:render
       - run: npm run test:acceptance
       - run: npm run build

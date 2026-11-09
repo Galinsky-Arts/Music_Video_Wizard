@@ -1,6 +1,7 @@
 import { AssetStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getEnvironment } from "@/lib/env";
+import { attachmentDisposition } from "@/lib/storage/disposition";
 import {
   readLocalAsset,
   verifyLocalAssetSignature
@@ -49,6 +50,7 @@ export async function GET(request: Request) {
   const key = url.searchParams.get("key");
   const expires = Number(url.searchParams.get("expires"));
   const signature = url.searchParams.get("signature");
+  const downloadFileName = url.searchParams.get("download") || undefined;
 
   if (
     !key ||
@@ -57,7 +59,8 @@ export async function GET(request: Request) {
       key,
       expires,
       signature,
-      env.BETTER_AUTH_SECRET
+      env.BETTER_AUTH_SECRET,
+      downloadFileName
     )
   ) {
     return new Response("Forbidden", { status: 403 });
@@ -77,11 +80,15 @@ export async function GET(request: Request) {
 
   try {
     const bytes = await readLocalAsset(env.ASSET_STORAGE_LOCAL_ROOT, key);
+    const downloadHeaders: Record<string, string> = downloadFileName
+      ? { "Content-Disposition": attachmentDisposition(downloadFileName) }
+      : {};
     const range = parseRange(request.headers.get("range"), bytes.byteLength);
 
     if (!range) {
       return new Response(responseBody(bytes), {
         headers: {
+          ...downloadHeaders,
           "Content-Type": assetVersion.contentType,
           "Content-Length": String(bytes.byteLength),
           "Accept-Ranges": "bytes",
@@ -94,6 +101,7 @@ export async function GET(request: Request) {
     return new Response(responseBody(body), {
       status: 206,
       headers: {
+        ...downloadHeaders,
         "Content-Type": assetVersion.contentType,
         "Content-Length": String(body.byteLength),
         "Content-Range": `bytes ${range.start}-${range.end}/${bytes.byteLength}`,

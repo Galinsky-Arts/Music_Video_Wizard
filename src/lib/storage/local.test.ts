@@ -17,6 +17,16 @@ afterEach(async () => {
 });
 
 describe("LocalAssetStorage", () => {
+  it("binds the download filename to the signed URL", async () => {
+    const storage = new LocalAssetStorage("/unused", "http://localhost:3000", "download-secret");
+    const signed = new URL(await storage.getSignedReadUrl("master.mp4", 60, "master-v1.mp4"));
+    const key = signed.searchParams.get("key")!;
+    const expires = Number(signed.searchParams.get("expires"));
+    const signature = signed.searchParams.get("signature")!;
+    expect(verifyLocalAssetSignature(key, expires, signature, "download-secret", "master-v1.mp4")).toBe(true);
+    expect(verifyLocalAssetSignature(key, expires, signature, "download-secret", "tampered.mp4")).toBe(false);
+    expect(verifyLocalAssetSignature(key, expires, signature, "download-secret")).toBe(false);
+  });
   it("writes immutable objects and produces verifiable signed URLs", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "mvw-storage-"));
     createdRoots.push(root);
