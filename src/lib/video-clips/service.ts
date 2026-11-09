@@ -427,11 +427,13 @@ export async function getVideoClipsState(input:{
         ?await storage.getSignedReadUrl(version.storageKey,60*30)
         :null,
       contentType:version?.contentType??null,
+      origin:(version?.metadata as Record<string,unknown>|null)?.origin==="import"?"import":"generated",
       createdAt:version?.createdAt??null
     };
   }));
 
   return {
+    maxMediaUploadBytes:getEnvironment().MAX_MEDIA_UPLOAD_BYTES,
     sourceReady:snapshot.sourceReady,
     providerAvailable,
     needsRegeneration:snapshot.needsRegeneration,

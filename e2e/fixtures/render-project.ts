@@ -24,13 +24,18 @@ export async function createRenderFixture(userId: string) {
         ...await db.projectVersion.findMany({ where: { projectId }, select: { nodeId: true } }),
         ...await db.assetVersion.findMany({ where: { asset: { projectId } }, select: { nodeId: true, storageKey: true } }),
         ...await db.shotVersion.findMany({ where: { shot: { projectId } }, select: { nodeId: true } }),
-        ...await db.timelineVersion.findMany({ where: { timeline: { projectId } }, select: { nodeId: true } })
+        ...await db.timelineVersion.findMany({ where: { timeline: { projectId } }, select: { nodeId: true } }),
+        ...await db.sequenceVersion.findMany({ where: { sequence: { projectId } }, select: { nodeId: true } })
       ];
       const assets = await db.assetVersion.findMany({ where: { asset: { projectId } } });
       for (const asset of assets) await storage.delete(asset.storageKey);
       await db.generationJob.deleteMany({ where: { projectId } });
       await db.timelineVersion.deleteMany({ where: { timeline: { projectId } } });
       await db.timeline.deleteMany({ where: { projectId } });
+      await db.sequenceVersionShot.deleteMany({ where: { sequenceVersion: { sequence: { projectId } } } });
+      await db.projectVersionSequence.deleteMany({ where: { projectVersionId: { in: (await db.projectVersion.findMany({ where: { projectId }, select: { id: true } })).map(item => item.id) } } });
+      await db.sequenceVersion.deleteMany({ where: { sequence: { projectId } } });
+      await db.sequence.deleteMany({ where: { projectId } });
       await db.shotVersion.deleteMany({ where: { shot: { projectId } } });
       await db.shot.deleteMany({ where: { projectId } });
       await db.projectVersion.deleteMany({ where: { projectId } });

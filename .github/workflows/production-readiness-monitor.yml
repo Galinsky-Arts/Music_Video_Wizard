@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     env:
-      PRODUCTION_URL: ${{ vars.MVW_PRODUCTION_URL }}
+      PRODUCTION_URL: ${{ vars.MVW_PRODUCTION_URL || 'https://music-video-wizard-galinsky-arts.onrender.com' }}
     steps:
       - name: Check configured deployment
         shell: bash

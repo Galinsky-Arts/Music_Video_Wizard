@@ -10,7 +10,8 @@ export interface InitialFrameMetadata{
   logicalShotId:string;
   sourceShotSpecificationVersionId:string;
   sourceStoryboardShotVersionId:string;
-  generationJobId:string;
+  generationJobId:string|null;
+  origin?:"import";
   providerId:string;
   modelId:string;
 }
@@ -25,7 +26,7 @@ export function parseInitialFrameMetadata(
     typeof item.logicalShotId!=="string"||
     typeof item.sourceShotSpecificationVersionId!=="string"||
     typeof item.sourceStoryboardShotVersionId!=="string"||
-    typeof item.generationJobId!=="string"||
+    (typeof item.generationJobId!=="string"&&!(item.generationJobId===null&&item.origin==="import"&&item.providerId==="user-import"))||
     typeof item.providerId!=="string"||
     typeof item.modelId!=="string"
   ) return null;
@@ -124,7 +125,7 @@ export function currentFrameVersions(
     if(sourceId){
       for(const candidateAsset of assets){
         const candidateVersion=candidateAsset.versions.find(item=>
-          parseInitialFrameMetadata(item.metadata)
+          item.status==="READY"&&parseInitialFrameMetadata(item.metadata)
             ?.sourceShotSpecificationVersionId===sourceId
         );
         if(candidateVersion){
