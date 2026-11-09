@@ -53,7 +53,7 @@ export async function probeImportedMedia(input: {
   }
   try {
     await runMediaProcess({ executable: input.ffmpeg,
-      args: ["-nostdin", "-v", "error", "-xerror", "-protocol_whitelist", "file,pipe", "-i", input.path, "-map", "0:v:0", "-an", "-threads", "1",
+      args: ["-nostdin", "-v", "error", "-xerror", "-protocol_whitelist", "file,pipe", "-threads", "1", "-i", input.path, "-map", "0:v:0", "-an", "-threads", "1",
         ...(input.kind === "image" ? ["-frames:v", "1"] : []), "-f", "null", "-"],
       signal: input.signal, description: "Imported media decode" });
   } catch {
