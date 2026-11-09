@@ -45,7 +45,7 @@ export async function importVisualAssembly(input: { userId: string; projectId: s
   try {
     const path = join(directory, "visual." + type.extension);
     await writeFile(path, input.bytes);
-    const signal = AbortSignal.timeout(120000);
+    const signal = AbortSignal.timeout(600000);
     const measured = await probeImportedMedia({ path, kind: "video", contentType: type.contentType,
       ffmpeg: env.VIDEO_RENDER_FFMPEG, ffprobe: env.VIDEO_RENDER_FFPROBE, signal });
     // Count decoded soundtrack samples instead of treating MP3 encoder padding as music.
