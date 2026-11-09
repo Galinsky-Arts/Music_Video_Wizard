@@ -119,15 +119,17 @@ export function buildFfmpegRenderCommand(input:{
   ];
 
   for(const path of input.clipPaths){
-    args.push("-i",path);
+    args.push("-threads","1","-i",path);
   }
   args.push("-i",input.audioPath);
   args.push(
+    "-filter_complex_threads","1",
     "-filter_complex",filterComplex,
     "-map","["+currentLabel+"]",
     "-map","[aout]",
     "-c:v","libx264",
-    "-preset","medium",
+    "-threads","1",
+    "-preset","veryfast",
     "-crf","18",
     "-pix_fmt",manifest.output.pixelFormat,
     "-r",fpsValue(manifest.output.frameRate),

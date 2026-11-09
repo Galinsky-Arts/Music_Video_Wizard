@@ -400,12 +400,13 @@ export function RefinementEditor(props:RefinementState&{
                     <span>Clip version</span>
                     <select
                       value={selectedId}
-                      disabled={busy||state.wizardLocked}
+                      disabled={busy||state.wizardLocked||item.alternatives.length===0}
                       onChange={event=>setClipDrafts(current=>({
                         ...current,
                         [item.position]:event.target.value
                       }))}
                     >
+                      {item.alternatives.length===0?<option value={item.assetVersionId??""}>Imported assembly · current</option>:null}
                       {item.alternatives.map(alt=>(
                         <option
                           key={alt.assetVersionId}

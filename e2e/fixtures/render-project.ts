@@ -9,7 +9,7 @@ import { ensureWizardProgress } from "../../src/lib/wizard/service";
 import { createAssetStorage } from "../../src/lib/storage";
 import { runMediaProcess } from "../../src/lib/media/process";
 
-export async function createRenderFixture(userId: string) {
+export async function createRenderFixture(userId: string, fresh = false) {
   const directory = await mkdtemp(join(tmpdir(), "mvw-browser-render-"));
   const ffmpeg = process.env.VIDEO_RENDER_FFMPEG ?? "ffmpeg";
   const signal = AbortSignal.timeout(60_000);
@@ -62,6 +62,7 @@ export async function createRenderFixture(userId: string) {
     await db.projectVersion.update({ where: { id: created.projectVersionId }, data: { outputWidth: 160, outputHeight: 90 } });
     await db.assetVersion.update({ where: { id: created.audioAssetVersionId }, data: { durationMs: 3000 } });
     await ensureWizardProgress({ userId, projectId });
+    if (fresh) return { ...created, cleanup };
     const timeline = await db.timeline.create({ data: { projectId, name: "Synthetic locked refinement", kind: "WORKING" } });
     const node = await db.domainVersionNode.create({ data: { kind: "TIMELINE" } });
     const version = await db.timelineVersion.create({ data: { timelineId: timeline.id, nodeId: node.id, versionNumber: 1,

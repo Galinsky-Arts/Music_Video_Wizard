@@ -566,8 +566,12 @@ export async function getAutomaticFirstCutState(input:{
       })
     );
 
+    const importedPayload=firstCutStep?.payload as Record<string,unknown>|null;
+    const imported=Boolean(importedPayload?.origin==="IMPORTED_ASSEMBLY"&&
+      importedPayload.timelineVersionId===latest.version?.id&&
+      latest.version?.basisProjectVersionId===projectVersion.id&&firstCutStep?.lockedAt);
     return {
-      sourceReady:Boolean(
+      sourceReady:imported||Boolean(
         sourceStep?.lockedAt&&
         plan&&
         audioMasterAssetVersionId
@@ -639,6 +643,6 @@ export async function getAutomaticFirstCutState(input:{
         }))
       }
       :null,
-    durationMs:snapshot.plan?.durationMs??null
+    durationMs:snapshot.plan?.durationMs??timelineVersion?.items.at(-1)?.timelineEndMs??null
   };
 }

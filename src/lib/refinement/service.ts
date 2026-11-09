@@ -382,7 +382,7 @@ async function persistWorkingVersion(tx:Tx,input:{
   return version;
 }
 
-async function initializeWorkingTimeline(tx:Tx,input:{
+export async function initializeWorkingTimeline(tx:Tx,input:{
   projectId:string;
   projectVersionId:string;
   userId:string;
