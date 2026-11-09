@@ -3008,3 +3008,7 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+.mediaImportForm { display: grid; gap: .6rem; margin: 1rem 0; padding: 1rem; border: 1px solid var(--border, #ddd); border-radius: .75rem; }
+.mediaImportForm input { max-width: 100%; min-width: 0; }
+.mediaImportForm small { opacity: .75; }

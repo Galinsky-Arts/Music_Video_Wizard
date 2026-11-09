@@ -2,6 +2,7 @@
 
 import { useEffect,useMemo,useState } from "react";
 import { useRouter } from "next/navigation";
+import { ShotMediaImport } from "./shot-media-import";
 
 type FrameView={
   sequencePosition:number;
@@ -14,6 +15,7 @@ type FrameView={
   assetVersionNumber:number|null;
   url:string|null;
   contentType:string|null;
+  origin?:string;
   createdAt:string|null;
 };
 
@@ -28,6 +30,7 @@ type JobView={
 };
 
 type StateView={
+  maxMediaUploadBytes?:number;
   sourceReady:boolean;
   providerAvailable:boolean;
   needsRegeneration:boolean;
@@ -230,7 +233,7 @@ export function InitialFramesEditor(props:StateView&{projectId:string}){
           </div>
           {!state.providerAvailable?(
             <p className="dashboardNote">
-              Configure an image-generation provider before generating frames.
+              Import your own frames, or configure an image-generation provider to generate them.
             </p>
           ):null}
           {activeJobs.length?(
@@ -255,7 +258,7 @@ export function InitialFramesEditor(props:StateView&{projectId:string}){
                 />
               ):(
                 <div className="initialFramePlaceholder">
-                  <span>Frame not generated</span>
+                  <span>No frame yet</span>
                 </div>
               )}
             </div>
@@ -267,12 +270,18 @@ export function InitialFramesEditor(props:StateView&{projectId:string}){
               <p className="dashboardNote">
                 {frame.assetVersionId
                   ?"Asset version "+frame.assetVersionNumber
-                  :"Waiting for generated asset"}
+                  :"Waiting for media"}
               </p>
               {frame.assetVersionId&&frame.createdAt?(
                 <p className="dashboardNote">
-                  Generated {new Date(frame.createdAt).toLocaleString()}
+                  {frame.origin==="import"?"Imported":"Generated"} {new Date(frame.createdAt).toLocaleString()}
                 </p>
+              ):null}
+              {!state.wizardLocked&&frame.shotSpecificationVersionId?(
+                <ShotMediaImport projectId={props.projectId} kind="image"
+                  shotSpecificationVersionId={frame.shotSpecificationVersionId!}
+                  wizardRevision={state.wizardRevision} maxBytes={state.maxMediaUploadBytes} disabled={busy||activeJobs.length>0}
+                  onBusyChange={setBusy} onImported={async()=>{await refresh();router.refresh();}} />
               ):null}
               {!state.wizardLocked&&frame.shotSpecificationVersionId?(
                 <button

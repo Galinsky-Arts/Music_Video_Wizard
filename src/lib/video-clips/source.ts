@@ -11,7 +11,8 @@ export interface VideoClipMetadata{
   sourceShotSpecificationVersionId:string;
   sourceInitialFrameAssetVersionId:string;
   sourceStoryboardShotVersionId:string;
-  generationJobId:string;
+  generationJobId:string|null;
+  origin?:"import";
   providerId:string;
   modelId:string;
   editorialDurationMs:number;
@@ -27,7 +28,7 @@ export function parseVideoClipMetadata(value:unknown):VideoClipMetadata|null{
     typeof item.sourceShotSpecificationVersionId!=="string"||
     typeof item.sourceInitialFrameAssetVersionId!=="string"||
     typeof item.sourceStoryboardShotVersionId!=="string"||
-    typeof item.generationJobId!=="string"||
+    (typeof item.generationJobId!=="string"&&!(item.generationJobId===null&&item.origin==="import"&&item.providerId==="user-import"))||
     typeof item.providerId!=="string"||
     typeof item.modelId!=="string"||
     typeof item.editorialDurationMs!=="number"||
@@ -79,6 +80,7 @@ export function currentVideoClipVersions(
     if(specId&&frameId){
       for(const candidateAsset of assets){
         const candidateVersion=candidateAsset.versions.find(item=>{
+          if(item.status!=="READY") return false;
           const metadata=parseVideoClipMetadata(item.metadata);
           return metadata?.sourceShotSpecificationVersionId===specId&&
             metadata.sourceInitialFrameAssetVersionId===frameId;

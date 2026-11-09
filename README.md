@@ -58,3 +58,5 @@ Every pull request is expected to pass the same commands in CI.
 ## Final delivery verification
 
 Run `npm run test:render` for real FFmpeg/FFprobe delivery checks and `npm run test:e2e` for browser acceptance. The browser suite requires migrated PostgreSQL, local asset storage, Chromium, FFmpeg and FFprobe. See [final export acceptance](docs/final-export-acceptance.md) for what these checks prove and the live-provider acceptance still required.
+
+Creators can also [import their own frames and clips](docs/media-imports.md) without paid generation providers. Current Galinsky Arts infrastructure is recorded in [live deployment](docs/live-deployment.md).

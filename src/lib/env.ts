@@ -17,6 +17,7 @@ const environmentSchema = z
       .default("false")
       .transform((value) => value === "true"),
     ASSET_STORAGE_LOCAL_ROOT: z.string().min(1).default(".data/assets"),
+    MAX_MEDIA_UPLOAD_BYTES: z.coerce.number().int().positive().max(104857600).default(52428800),
     MAX_AUDIO_UPLOAD_BYTES: z.coerce.number().int().positive().default(536870912),
     JOB_QUEUE_SCHEMA: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/).default("pgboss"),
     JOB_RETRY_LIMIT: z.coerce.number().int().min(0).max(20).default(3),

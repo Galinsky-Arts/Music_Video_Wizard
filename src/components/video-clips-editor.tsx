@@ -2,6 +2,7 @@
 
 import { useEffect,useMemo,useState } from "react";
 import { useRouter } from "next/navigation";
+import { ShotMediaImport } from "./shot-media-import";
 
 type ClipView={
   sequencePosition:number;
@@ -15,6 +16,7 @@ type ClipView={
   assetVersionNumber:number|null;
   url:string|null;
   contentType:string|null;
+  origin?:string;
   createdAt:string|null;
 };
 
@@ -29,6 +31,7 @@ type JobView={
 };
 
 type StateView={
+  maxMediaUploadBytes?:number;
   sourceReady:boolean;
   providerAvailable:boolean;
   needsRegeneration:boolean;
@@ -231,7 +234,7 @@ export function VideoClipsEditor(props:StateView&{projectId:string}){
 
           {!state.providerAvailable?(
             <p className="dashboardNote">
-              Configure a compatible video-generation provider before generating clips.
+              Import your own clips, or configure a video-generation provider to generate them.
             </p>
           ):null}
 
@@ -268,7 +271,7 @@ export function VideoClipsEditor(props:StateView&{projectId:string}){
                 </video>
               ):(
                 <div className="initialFramePlaceholder">
-                  <span>Clip not generated</span>
+                  <span>No clip yet</span>
                 </div>
               )}
             </div>
@@ -280,12 +283,18 @@ export function VideoClipsEditor(props:StateView&{projectId:string}){
               <p className="dashboardNote">
                 {clip.assetVersionId
                   ?"Asset version "+clip.assetVersionNumber
-                  :"Waiting for generated asset"}
+                  :"Waiting for media"}
               </p>
               {clip.assetVersionId&&clip.createdAt?(
                 <p className="dashboardNote">
-                  Generated {new Date(clip.createdAt).toLocaleString()}
+                  {clip.origin==="import"?"Imported":"Generated"} {new Date(clip.createdAt).toLocaleString()}
                 </p>
+              ):null}
+              {!state.wizardLocked&&clip.shotSpecificationVersionId?(
+                <ShotMediaImport projectId={props.projectId} kind="video"
+                  shotSpecificationVersionId={clip.shotSpecificationVersionId!}
+                  wizardRevision={state.wizardRevision} maxBytes={state.maxMediaUploadBytes} disabled={busy||activeJobs.length>0}
+                  onBusyChange={setBusy} onImported={async()=>{await refresh();router.refresh();}} />
               ):null}
               {!state.wizardLocked&&clip.shotSpecificationVersionId?(
                 <button
