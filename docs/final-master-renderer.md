@@ -95,3 +95,7 @@ The render node records `RENDERED_FROM` dependency edges from the exact timeline
 Persisting the verified master automatically completes Finish & Export using the same manifest fingerprint that was prepared before rendering.
 
 The stage is not silently locked. The review/download UI can inspect the completed master before the final project-stage lock.
+
+## Measured output and browser acceptance
+
+See [final export acceptance](final-export-acceptance.md) for output verification, atomic submission, downloads, and the real media/browser checks.

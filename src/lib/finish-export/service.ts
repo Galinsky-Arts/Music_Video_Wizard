@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   AssetKind,
   AssetStatus,
@@ -328,29 +329,19 @@ export async function queueFinalMasterRender(input:{
       where:{id:input.projectId},
       select:{workspaceId:true}
     });
-    let asset=await tx.asset.findFirst({
+    const asset=await tx.asset.findFirst({
       where:{
         projectId:input.projectId,
         kind:AssetKind.RENDER_MASTER
       },
       orderBy:{createdAt:"asc"}
     });
-    if(!asset){
-      asset=await tx.asset.create({
-        data:{
-          workspaceId:project.workspaceId,
-          projectId:input.projectId,
-          kind:AssetKind.RENDER_MASTER,
-          name:"Master render"
-        }
-      });
-    }
     return {
       workspaceId:project.workspaceId,
       stepId:current.step.id,
       manifest,
       manifestFingerprint:fingerprint,
-      renderAssetId:asset.id
+      renderAssetId:asset?.id??randomUUID()
     };
   });
 
@@ -385,7 +376,60 @@ export async function queueFinalMasterRender(input:{
         position:item.position
       }))
     ],
-    prepare:async tx=>{
+    prepare:async (tx,jobId)=>{
+      // Claim this revision in the SAME transaction as the job and pg-boss row.
+      // The earlier read/compile can race another tab, lock, or source edit.
+      const claimed=await tx.wizardProgress.updateMany({
+        where:{
+          projectVersionId:projectVersion.id,
+          revision:input.expectedWizardRevision
+        },
+        data:{revision:{increment:1}}
+      });
+      if(claimed.count!==1){
+        throw new FinishExportConflictError(
+          "Finish & Export changed in another request. Reload before continuing."
+        );
+      }
+      const current=await mutationContext(tx,{
+        ...input,
+        projectVersionId:projectVersion.id,
+        expectedWizardRevision:input.expectedWizardRevision+1
+      });
+      const manifest=await compileCurrentManifest(tx,{
+        projectId:input.projectId,
+        projectVersionId:projectVersion.id
+      });
+      if(manifestFingerprint(manifest)!==context.manifestFingerprint||
+        current.step.payloadFingerprint!==context.manifestFingerprint){
+        throw new FinishExportConflictError(
+          "The render sources changed. Prepare the current manifest again."
+        );
+      }
+      const active=await tx.generationJob.findFirst({
+        where:{
+          id:{not:jobId},
+          projectId:input.projectId,
+          kind:GenerationKind.RENDER,
+          providerKey:"ffmpeg:finish-export",
+          status:{in:[GenerationStatus.QUEUED,GenerationStatus.RUNNING]}
+        },
+        select:{id:true}
+      });
+      if(active) throw new FinishExportConflictError("A final-master render job is already active.");
+      // Create the logical asset only after claiming the revision. A losing
+      // concurrent request must not leave an earlier empty asset in history.
+      await tx.asset.upsert({
+        where:{id:context.renderAssetId},
+        create:{
+          id:context.renderAssetId,
+          workspaceId:context.workspaceId,
+          projectId:input.projectId,
+          kind:AssetKind.RENDER_MASTER,
+          name:"Master render"
+        },
+        update:{}
+      });
       await tx.wizardStepState.update({
         where:{id:context.stepId},
         data:{
@@ -447,6 +491,7 @@ export async function lockFinishExport(input:{
 
     const asset=await renderMasterAsset(tx,input.projectId);
     const master=asset?.versions.find(version=>
+      version.status===AssetStatus.READY&&
       renderMetadata(version.metadata)?.manifestFingerprint===fingerprint
     )??null;
     if(!master||master.status!==AssetStatus.READY){
@@ -531,6 +576,7 @@ export async function getFinishExportState(input:{
     const asset=await renderMasterAsset(tx,input.projectId);
     const currentMaster=currentFingerprint
       ?asset?.versions.find(version=>
+        version.status===AssetStatus.READY&&
         renderMetadata(version.metadata)?.manifestFingerprint===
           currentFingerprint
       )??null
@@ -574,10 +620,15 @@ export async function getFinishExportState(input:{
         url:await storage.getSignedReadUrl(
           snapshot.currentMaster.storageKey,
           60*60
+        ),
+        downloadUrl:await storage.getSignedReadUrl(
+          snapshot.currentMaster.storageKey,
+          60*60,
+          "music-video-master-v"+snapshot.currentMaster.versionNumber+".mp4"
         )
       }
       :null,
-    renderHistory:snapshot.renderHistory.map(version=>({
+    renderHistory:await Promise.all(snapshot.renderHistory.map(async version=>({
       id:version.id,
       versionNumber:version.versionNumber,
       status:version.status,
@@ -588,11 +639,15 @@ export async function getFinishExportState(input:{
       frameRate:version.frameRate,
       createdAt:version.createdAt,
       readyAt:version.readyAt,
+      downloadUrl:version.status===AssetStatus.READY
+        ?await storage.getSignedReadUrl(version.storageKey,60*60,
+          "music-video-master-v"+version.versionNumber+".mp4")
+        :null,
       current:Boolean(
         snapshot.currentMaster&&
         version.id===snapshot.currentMaster.id
       )
-    })),
+    }))),
     wizardRevision:snapshot.wizardRevision,
     wizardStatus:snapshot.wizardStatus,
     wizardLocked:snapshot.wizardLocked

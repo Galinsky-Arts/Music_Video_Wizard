@@ -10,3 +10,9 @@ dist/
 *.log
 prisma/*.db
 .data/
+
+# Generated TypeScript and browser verification artifacts
+next-env.d.ts
+*.tsbuildinfo
+test-results/
+playwright-report/

@@ -88,7 +88,11 @@ async function assertRuntime(){
 
   const ffmpeg=await run(env.AUDIO_ANALYSIS_FFMPEG,["-version"]);
   assert.match(ffmpeg.stdout,/ffmpeg version/i);
-  console.log("ffmpeg: ok");
+  const renderFfmpeg=await run(env.VIDEO_RENDER_FFMPEG,["-version"]);
+  assert.match(renderFfmpeg.stdout,/ffmpeg version/i);
+  const ffprobe=await run(env.VIDEO_RENDER_FFPROBE,["-version"]);
+  assert.match(ffprobe.stdout,/ffprobe version/i);
+  console.log("ffmpeg and ffprobe: ok");
 
   const python=await run(env.AUDIO_ANALYSIS_PYTHON,[
     "-c",

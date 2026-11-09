@@ -54,3 +54,7 @@ Every pull request is expected to pass the same commands in CI.
 - Downstream invalidation/recompilation must be dependency-aware.
 - The automatic first cut is a core product capability, not a manual editing shortcut.
 - Temporary mocks must never silently masquerade as completed production capability.
+
+## Final delivery verification
+
+Run `npm run test:render` for real FFmpeg/FFprobe delivery checks and `npm run test:e2e` for browser acceptance. The browser suite requires migrated PostgreSQL, local asset storage, Chromium, FFmpeg and FFprobe. See [final export acceptance](docs/final-export-acceptance.md) for what these checks prove and the live-provider acceptance still required.

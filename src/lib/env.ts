@@ -32,6 +32,7 @@ const environmentSchema = z
     JOB_WAKE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(180000).default(90000),
     AUDIO_ANALYSIS_PYTHON: z.string().min(1).default("python3"),
     AUDIO_ANALYSIS_FFMPEG: z.string().min(1).default("ffmpeg"),
+    VIDEO_RENDER_FFPROBE: z.string().min(1).default("ffprobe"),
     VIDEO_RENDER_FFMPEG: z.string().min(1).default("ffmpeg"),
     AUDIO_TRANSCRIPTION_PROVIDER: z.enum(["none", "openai"]).default("none"),
     AUDIO_TRANSCRIPTION_MODEL: z.string().min(1).default("gpt-transcribe"),

@@ -76,14 +76,16 @@ export class LocalAssetStorage implements AssetStorage {
 
   async getSignedReadUrl(
     key: string,
-    expiresInSeconds: number
+    expiresInSeconds: number,
+    downloadFileName?: string
   ): Promise<string> {
     const expires = Math.floor(Date.now() / 1000) + expiresInSeconds;
-    const signature = signLocalAsset(key, expires, this.signingSecret);
+    const signature = signLocalAsset(key, expires, this.signingSecret, downloadFileName);
     const url = new URL("/api/storage/local", this.publicBaseUrl);
     url.searchParams.set("key", key);
     url.searchParams.set("expires", String(expires));
     url.searchParams.set("signature", signature);
+    if (downloadFileName) url.searchParams.set("download", downloadFileName);
     return url.toString();
   }
 }
@@ -98,10 +100,11 @@ export async function readLocalAsset(
 function signLocalAsset(
   key: string,
   expires: number,
-  secret: string
+  secret: string,
+  downloadFileName?: string
 ): string {
   return createHmac("sha256", secret)
-    .update(`${key}:${expires}`)
+    .update(`${key}:${expires}` + (downloadFileName ? `:download:${downloadFileName}` : ""))
     .digest("hex");
 }
 
@@ -109,13 +112,14 @@ export function verifyLocalAssetSignature(
   key: string,
   expires: number,
   signature: string,
-  secret: string
+  secret: string,
+  downloadFileName?: string
 ): boolean {
   if (!Number.isSafeInteger(expires) || expires < Math.floor(Date.now() / 1000)) {
     return false;
   }
 
-  const expected = Buffer.from(signLocalAsset(key, expires, secret), "hex");
+  const expected = Buffer.from(signLocalAsset(key, expires, secret, downloadFileName), "hex");
   let actual: Buffer;
   try {
     actual = Buffer.from(signature, "hex");

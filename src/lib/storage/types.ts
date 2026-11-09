@@ -25,5 +25,5 @@ export interface AssetStorage {
   delete(key: AssetKey): Promise<void>;
   exists(key: AssetKey): Promise<boolean>;
   downloadToFile(key: AssetKey, destinationPath: string): Promise<void>;
-  getSignedReadUrl(key: AssetKey, expiresInSeconds: number): Promise<string>;
+  getSignedReadUrl(key: AssetKey, expiresInSeconds: number, downloadFileName?: string): Promise<string>;
 }

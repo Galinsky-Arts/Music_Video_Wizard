@@ -48,5 +48,6 @@ jobs:
       - run: npm install
       - run: npm run db:generate
       - run: npm run db:deploy
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

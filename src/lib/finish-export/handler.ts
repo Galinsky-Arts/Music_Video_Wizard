@@ -1,5 +1,4 @@
 import { createHash,randomUUID } from "node:crypto";
-import { spawn } from "node:child_process";
 import { createReadStream } from "node:fs";
 import { mkdtemp,rm,stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -26,6 +25,8 @@ import {
   completeAutomaticWizardStepInTransaction
 } from "@/lib/wizard/service";
 import { buildFfmpegRenderCommand } from "./ffmpeg";
+import { runMediaProcess } from "@/lib/media/process";
+import { verifyRenderedMaster, type VerifiedMaster } from "./verification";
 import { queuedMasterRenderSchema } from "./input";
 
 function toJson(value:unknown):Prisma.InputJsonValue{
@@ -55,69 +56,6 @@ async function sha256File(path:string){
     stream.once("end",resolve);
   });
   return hash.digest("hex");
-}
-
-async function runProcess(input:{
-  executable:string;
-  args:string[];
-  signal:AbortSignal;
-  description:string;
-}){
-  await new Promise<void>((resolve,reject)=>{
-    const child=spawn(input.executable,input.args,{
-      stdio:["ignore","ignore","pipe"]
-    });
-    let stderr="";
-    let settled=false;
-    let abortError:Error|null=null;
-    let killTimer:ReturnType<typeof setTimeout>|null=null;
-
-    const finish=(error?:Error)=>{
-      if(settled) return;
-      settled=true;
-      if(killTimer) clearTimeout(killTimer);
-      input.signal.removeEventListener("abort",onAbort);
-      if(error) reject(error);
-      else resolve();
-    };
-
-    const onAbort=()=>{
-      abortError=
-        input.signal.reason instanceof Error
-          ?input.signal.reason
-          :new Error(input.description+" aborted.");
-      child.kill("SIGTERM");
-      killTimer=setTimeout(()=>{
-        if(!settled) child.kill("SIGKILL");
-      },5000);
-    };
-    input.signal.addEventListener("abort",onAbort,{once:true});
-
-    child.stderr.setEncoding("utf8");
-    child.stderr.on("data",(chunk:string)=>{
-      stderr=(stderr+chunk).slice(-12000);
-    });
-    child.once("error",error=>{
-      const message=
-        error instanceof Error?error.message:String(error);
-      finish(new Error(input.description+" could not start: "+message));
-    });
-    child.once("close",code=>{
-      if(settled) return;
-      if(abortError){
-        finish(abortError);
-        return;
-      }
-      if(code===0){
-        finish();
-        return;
-      }
-      finish(new Error(
-        input.description+" failed with exit code "+String(code)+
-        (stderr.trim()?": "+stderr.trim():"")
-      ));
-    });
-  });
 }
 
 async function existingOutput(jobId:string){
@@ -252,7 +190,7 @@ export async function handleFinalMasterRender(
 
     await context.reportProgress(35,"Rendering final master with FFmpeg.");
     try{
-      await runProcess({
+      await runMediaProcess({
         executable:command.executable,
         args:command.args,
         signal:context.signal,
@@ -266,22 +204,14 @@ export async function handleFinalMasterRender(
     }
 
     await context.reportProgress(82,"Verifying rendered master.");
+    let verified: VerifiedMaster;
     try{
-      await runProcess({
-        executable:env.VIDEO_RENDER_FFMPEG,
-        args:[
-          "-nostdin",
-          "-hide_banner",
-          "-loglevel","error",
-          "-i",outputPath,
-          "-map","0:v:0",
-          "-map","0:a:0",
-          "-c","copy",
-          "-f","null",
-          "-"
-        ],
-        signal:context.signal,
-        description:"FFmpeg master verification"
+      verified = await verifyRenderedMaster({
+        ffmpeg: env.VIDEO_RENDER_FFMPEG,
+        ffprobe: env.VIDEO_RENDER_FFPROBE,
+        path: outputPath,
+        manifest: queued.manifest,
+        signal: context.signal
       });
     }catch(error){
       if(context.signal.aborted) throw error;
@@ -305,13 +235,11 @@ export async function handleFinalMasterRender(
       "workspaces",job.workspaceId,
       "projects",queued.projectId,
       "renders",queued.renderAssetId,
-      assetVersionId+".mp4"
+      // A recovered/late attempt must never overwrite another attempt's output.
+      assetVersionId+"-"+randomUUID()+".mp4"
     ].join("/");
 
     await context.reportProgress(90,"Persisting rendered master.");
-    if(await storage.exists(storageKey)){
-      await storage.delete(storageKey);
-    }
     await storage.putFile({
       key:storageKey,
       filePath:outputPath,
@@ -319,6 +247,7 @@ export async function handleFinalMasterRender(
     });
 
     try{
+      context.signal.throwIfAborted();
       const persisted=await db.$transaction(async tx=>{
         const duplicate=await tx.generationOutput.findFirst({
           where:{jobId:job.id,role:"render-master"}
@@ -367,10 +296,10 @@ export async function handleFinalMasterRender(
             contentType:"video/mp4",
             byteSize:BigInt(info.size),
             checksumSha256,
-            width:queued.manifest.output.width,
-            height:queued.manifest.output.height,
-            durationMs:queued.manifest.durationMs,
-            frameRate:queued.manifest.output.frameRate,
+            width:verified.width,
+            height:verified.height,
+            durationMs:verified.durationMs,
+            frameRate:verified.frameRate,
             metadata:toJson({
               role:"render-master",
               manifestFingerprint:queued.manifestFingerprint,
@@ -383,6 +312,7 @@ export async function handleFinalMasterRender(
               projectVersionId:queued.manifest.projectVersionId,
               generationJobId:job.id,
               renderer:"ffmpeg",
+              verification:toJson(verified),
               output:queued.manifest.output,
               expectedFrameCount:
                 queued.manifest.expectedFrameCount
@@ -434,6 +364,10 @@ export async function handleFinalMasterRender(
         return {assetVersionId,nodeId,reused:false};
       });
 
+      if(persisted.reused){
+        await storage.delete(storageKey);
+        return persisted;
+      }
       return {
         ...persisted,
         checksumSha256,
