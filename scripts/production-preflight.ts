@@ -126,11 +126,8 @@ function assertProductionConfiguration(){
     "openai",
     "Production text generation provider is not enabled."
   );
-  assert.equal(
-    env.IMAGE_GENERATION_PROVIDER,
-    "openai",
-    "Production image generation provider is not enabled."
-  );
+  assert.notEqual(env.IMAGE_GENERATION_PROVIDER,"none","Production image generation provider is not enabled.");
+  if (env.IMAGE_GENERATION_PROVIDER === "stability") assert.ok(env.STABILITY_API_KEY,"STABILITY_API_KEY is required.");
   assert.notEqual(env.VIDEO_GENERATION_PROVIDER,"none","Production video generation provider is not enabled.");
   assert.ok(env.OPENAI_API_KEY,"OPENAI_API_KEY is required.");
   if (env.VIDEO_GENERATION_PROVIDER === "runway") assert.ok(env.RUNWAY_API_SECRET,"RUNWAY_API_SECRET is required.");

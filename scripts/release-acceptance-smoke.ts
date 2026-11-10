@@ -89,6 +89,7 @@ function assertWorkerRegistry(){
     [GenerationKind.TEXT,"openai-responses:storyboard-shot"],
     [GenerationKind.TEXT,"openai-responses:shot-specifications"],
     [GenerationKind.IMAGE,"openai-images:initial-frame"],
+    [GenerationKind.IMAGE,"stability-images:initial-frame"],
     [GenerationKind.VIDEO,"runway:video-clip"],
     [GenerationKind.VIDEO,"comfyui:video-clip"],
     [GenerationKind.RENDER,"ffmpeg:finish-export"]
