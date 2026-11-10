@@ -110,14 +110,15 @@ class StoryTests(unittest.TestCase):
             plan={"schemaVersion":1,"durationMs":3003,"shots":[{"id":"a","startMs":0,"endMs":1007,"prompt":"red"},{"id":"b","startMs":1007,"endMs":3003,"prompt":"blue"}]}
             self.story.validate_plan(plan)
             visual,movie=self.story.assemble(Path(shutil.which("ffmpeg")),plan,clips,audio,root)
-            self.assertEqual(self.story.inspect_video(visual)["frames"],72)
+            self.assertEqual(self.story.inspect_video(visual)["frames"],73)
+            self.assertGreaterEqual(self.story.inspect_video(visual)["frames"]/24,plan["durationMs"]/1000)
             self.assertEqual(hashlib.sha256(audio.read_bytes()).hexdigest(),before)
             with av.open(str(movie)) as container:
                 self.assertEqual(len(container.streams.audio),1)
                 self.assertAlmostEqual(float(container.streams.audio[0].duration*container.streams.audio[0].time_base),3.003,places=2)
                 samples=list(container.decode(video=0))
-                self.assertEqual(len(samples),72)
+                self.assertEqual(len(samples),73)
                 first=samples[0].to_ndarray(format="rgb24")[360,640]
-                second=samples[24].to_ndarray(format="rgb24")[360,640]
+                second=samples[25].to_ndarray(format="rgb24")[360,640]
                 self.assertGreater(first[0],first[2]);self.assertGreater(second[2],second[0])
 if __name__=="__main__":unittest.main()

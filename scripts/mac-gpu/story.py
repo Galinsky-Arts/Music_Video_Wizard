@@ -17,7 +17,7 @@ ROOT=Path(__file__).resolve().parent
 
 def frame_count(shot, fps=24):
     # Round absolute boundaries, not each duration, so 35 cuts cannot accumulate drift.
-    return round(shot["endMs"]*fps/1000)-round(shot["startMs"]*fps/1000)
+    return math.ceil(shot["endMs"]*fps/1000)-math.ceil(shot["startMs"]*fps/1000)
 
 def validate_plan(plan):
     if plan.get("schemaVersion")!=1 or not isinstance(plan.get("shots"),list) or not 1<=len(plan["shots"])<=160:
@@ -115,7 +115,7 @@ def assemble(ffmpeg,plan,clips,audio,directory):
     visual=directory/"Controlled_Chaos_Visual_Edit.mp4"
     args += ["-filter_complex_threads","1","-filter_complex",";".join(filters),"-map","[out]","-an","-c:v","libx264","-threads","4","-preset","veryfast","-b:v","1200k","-maxrate","1600k","-bufsize","3200k","-movflags","+faststart","-y",str(visual)]
     subprocess.run(args,check=True)
-    expected=round(plan["durationMs"]*24/1000)
+    expected=math.ceil(plan["durationMs"]*24/1000)
     measured=inspect_video(visual,expected)
     if measured["frames"]!=expected or (measured["width"],measured["height"])!=(1280,720):raise RuntimeError("Assembly does not match the complete frame plan")
     movie=directory/"Controlled_Chaos_Music_Video.mp4"
