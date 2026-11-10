@@ -3,7 +3,7 @@ import { useState } from "react";
 import { createResonancePlan, narrativePlanSchema, type NarrativePlan } from "@/lib/narrative/plan";
 function clock(ms: number) { return `${Math.floor(ms/60000)}:${String(Math.floor(ms/1000)%60).padStart(2,"0")}`; }
 export function NarrativeEditor(props: { projectId: string; durationMs: number | null; versionId: string | null; savedPlan: NarrativePlan | null; provider: string }) {
-  const [plan, setPlan] = useState(props.savedPlan ?? (props.durationMs && props.durationMs >= 30000 && props.durationMs <= 600000 ? createResonancePlan(props.durationMs) : null));
+  const [plan, setPlan] = useState(() => props.savedPlan ?? (props.durationMs && props.durationMs >= 30000 && props.durationMs <= 600000 ? createResonancePlan(props.durationMs) : null));
   const [versionId, setVersionId] = useState(props.versionId), [busy,setBusy] = useState(false), [message,setMessage] = useState("");
   if (!plan) return <p className="dashboardNote">Measure the original soundtrack in the music analysis stage first. This narrative template supports songs from 30 seconds to ten minutes.</p>;
   const currentPlan = plan;
@@ -31,14 +31,14 @@ export function NarrativeEditor(props: { projectId: string; durationMs: number |
     catch { setMessage("The story file is invalid or its timing does not match the original song."); }
   }
   return <div className="projectForm">
-    <label><span>Story title</span><input value={plan.title} maxLength={160} onChange={e=>setPlan({...plan,title:e.target.value})}/></label>
-    <label><span>Logline</span><textarea value={plan.logline} maxLength={2000} onChange={e=>setPlan({...plan,logline:e.target.value})}/></label>
+    <label><span>Story title</span><input disabled={busy} value={plan.title} maxLength={160} onChange={e=>setPlan({...plan,title:e.target.value})}/></label>
+    <label><span>Logline</span><textarea disabled={busy} value={plan.logline} maxLength={2000} onChange={e=>setPlan({...plan,logline:e.target.value})}/></label>
     <p className="dashboardNote">{clock(plan.durationMs)} · {plan.shots.length} planned shots · Video provider: {props.provider}. This is a director-authored planning document. Saving it does not complete wizard stages or generate video.</p>
     <h2>Character continuity</h2>
-    {plan.cast.map((character,i)=><label key={i}><span>{character.name}</span><textarea aria-label={character.name} value={character.description} maxLength={2000} onChange={e=>updateCharacter(i,e.target.value)}/></label>)}
+    {plan.cast.map((character,i)=><label key={i}><span>{character.name}</span><textarea disabled={busy} aria-label={character.name} value={character.description} maxLength={2000} onChange={e=>updateCharacter(i,e.target.value)}/></label>)}
     <h2>Story beats</h2>
     {plan.beats.map(beat=><section className="dashboardCard" key={beat.title}><p className="eyebrow">{clock(beat.startMs)}–{clock(beat.endMs)}</p><h3>{beat.title}</h3><p>{beat.goal}</p>
-      {plan.shots.filter(shot=>shot.beat===beat.title).map(shot=><details key={shot.id}><summary>{shot.id} · {clock(shot.startMs)} · {shot.action}</summary><p>{shot.consequence}</p><label><span>AI video prompt for {shot.id}</span><textarea rows={8} value={shot.prompt} maxLength={12000} onChange={e=>setPlan({...plan,shots:plan.shots.map(s=>s.id===shot.id?{...s,prompt:e.target.value}:s)})}/></label></details>)}
+      {plan.shots.filter(shot=>shot.beat===beat.title).map(shot=><details key={shot.id}><summary>{shot.id} · {clock(shot.startMs)} · {shot.action}</summary><p>{shot.consequence}</p><label><span>AI video prompt for {shot.id}</span><textarea disabled={busy} rows={8} value={shot.prompt} maxLength={12000} onChange={e=>setPlan({...plan,shots:plan.shots.map(s=>s.id===shot.id?{...s,prompt:e.target.value}:s)})}/></label></details>)}
     </section>)}
     <p className="dashboardNote">Review these beats in the treatment and storyboard, then approve consistent first frames before generating clips. ComfyUI uses your own GPU; Runway uses paid credits when configured. This screen starts no provider calls.</p>
     <button className="primaryButton" disabled={busy || !plan.title.trim() || !plan.logline.trim()} onClick={save}>{busy?"Saving…":"Save narrative plan"}</button>
