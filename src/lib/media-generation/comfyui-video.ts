@@ -89,7 +89,10 @@ export class ComfyUIVideoAdapter implements MediaGenerationAdapter {
     if (name.includes("..") || name.startsWith("/") || name.includes("\\")) throw new MediaProviderError("Invalid ComfyUI image path.", true);
     const frames = Math.max(w.frameOffset + w.frameMultiple, Math.ceil((Math.ceil(request.generationDurationMs * w.frameRate / 1000) - w.frameOffset) / w.frameMultiple) * w.frameMultiple + w.frameOffset);
     const seed = Math.floor(Math.random() * 2147483647);
-    const graph = substitute(w.nodes, { PROMPT: request.prompt, NEGATIVE_PROMPT: request.negativeConstraints.join("; "), FIRST_FRAME: name, WIDTH: w.width, HEIGHT: w.height, FPS: w.frameRate, FRAME_COUNT: frames, SEED: seed });
+    const separateNegatives = Object.values(w.nodes).some(node => JSON.stringify(node.inputs).includes('"{{NEGATIVE_PROMPT}}"'));
+    const positivePrompt = !separateNegatives && request.negativeConstraints.length
+      ? request.prompt + "\n\nConstraints:\n- " + request.negativeConstraints.join("\n- ") : request.prompt;
+    const graph = substitute(w.nodes, { PROMPT: positivePrompt, NEGATIVE_PROMPT: request.negativeConstraints.join("; "), FIRST_FRAME: name, WIDTH: w.width, HEIGHT: w.height, FPS: w.frameRate, FRAME_COUNT: frames, SEED: seed });
     const task = z.object({ prompt_id: z.string().uuid() }).parse(await (await this.request("/prompt", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ prompt: graph, client_id: randomUUID() }) })).json());
     return { providerId: this.providerId, modelId: model.modelId, externalJobId: task.prompt_id,
       requestSnapshot: { workflow: graph, outputNodeId: w.outputNodeId, duration: frames / w.frameRate, seed } };

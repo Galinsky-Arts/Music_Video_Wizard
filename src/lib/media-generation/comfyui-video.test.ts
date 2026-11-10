@@ -44,6 +44,19 @@ describe("ComfyUI local video adapter", () => {
     expect(JSON.stringify(result)).not.toContain("private-worker-key");
     expect(fetch.mock.calls[1]![1]?.redirect).toBe("error");
   });
+  it("loads the shipped Apple MLX graph and preserves exclusions without a negative-prompt node", async () => {
+    const a = new ComfyUIVideoAdapter("http://127.0.0.1:8289", "config/comfyui-mac-mlx.json");
+    const fetch = vi.spyOn(globalThis,"fetch").mockResolvedValueOnce(json({name:"first.png",subfolder:""})).mockResolvedValueOnce(json({prompt_id:taskId}));
+    const model = (await a.listModels())[0]!;
+    expect(model.modelId).toBe("mac-ltx-2.3-mlx-q4-distilled-v1");
+    expect(model.capabilities.aspectRatios).toEqual(["16:9"]);
+    await a.submit({model,request,references:[{role:"FIRST_FRAME",contentType:"image/png",dataUri:"data:image/png;base64,aW1hZ2U="}]});
+    const graph = JSON.parse(String(fetch.mock.calls[1]![1]?.body)).prompt;
+    expect(graph["3"].class_type).toBe("LTX2MLXGenerate");
+    expect(graph["3"].inputs).toMatchObject({width:1024,height:576,num_frames:121});
+    expect(graph["3"].inputs.prompt).toContain(request.negativeConstraints[0]);
+    expect(graph["2"].inputs.image).toBe("first.png");
+  });
   it("rejects unsupported duration and missing references before submitting", async () => {
     const fetch = vi.spyOn(globalThis, "fetch"); const a = new ComfyUIVideoAdapter("http://127.0.0.1:8188", path); const model = (await a.listModels())[0]!;
     await expect(a.submit({ model, request: { ...request, generationDurationMs: 11000 } })).rejects.toThrow(/cannot satisfy/);

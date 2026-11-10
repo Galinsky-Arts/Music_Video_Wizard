@@ -1,0 +1,16 @@
+{
+  "modelId": "mac-ltx-2.3-mlx-q4-distilled-v1",
+  "width": 1024,
+  "height": 576,
+  "frameRate": 24,
+  "frameMultiple": 8,
+  "frameOffset": 1,
+  "maxDurationMs": 10000,
+  "aspectRatio": "16:9",
+  "outputNodeId": "3",
+  "nodes": {
+    "1": { "class_type": "LTX2MLXModelLoader", "inputs": { "model_dir": "dgrauet/ltx-2.3-mlx-q4", "pipeline_type": "distilled", "low_ram": false, "custom_model_dir": "" } },
+    "2": { "class_type": "LoadImage", "inputs": { "image": "{{FIRST_FRAME}}" } },
+    "3": { "class_type": "LTX2MLXGenerate", "inputs": { "pipeline": ["1",0], "image": ["2",0], "prompt": "{{PROMPT}}", "width": "{{WIDTH}}", "height": "{{HEIGHT}}", "num_frames": "{{FRAME_COUNT}}", "seed": "{{SEED}}", "cfg_scale": 3.0, "frame_rate": "{{FPS}}", "filename_prefix": "music-video-wizard/clip" } }
+  }
+}
