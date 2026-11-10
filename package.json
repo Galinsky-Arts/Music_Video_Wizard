@@ -46,32 +46,39 @@
     "ops:health": "tsx scripts/ops-health.ts",
     "start:production": "prisma migrate deploy && next start -H 0.0.0.0 -p ${PORT:-10000}",
     "ops:production-gate": "tsx scripts/ops-production-gate.ts",
-    "test:render": "tsx scripts/render-smoke.ts"
+    "test:render": "tsx scripts/render-smoke.ts",
+    "predev": "node scripts/build-browser-gpu.mjs",
+    "prebuild": "node scripts/build-browser-gpu.mjs"
   },
   "dependencies": {
-    "@prisma/client": "^6.16.2",
-    "next": "^15.5.4",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "zod": "^4.1.11",
-    "better-auth": "1.7.10",
-    "@better-auth/prisma-adapter": "1.7.10",
     "@aws-sdk/client-s3": "3.1146.0",
     "@aws-sdk/s3-request-presigner": "3.1146.0",
+    "@better-auth/prisma-adapter": "1.7.10",
+    "@huggingface/tokenizers": "0.2.0",
+    "@mediabunny/aac-encoder": "1.63.0",
+    "@prisma/client": "^6.16.2",
+    "better-auth": "1.7.10",
+    "mediabunny": "1.63.0",
+    "next": "^15.5.4",
+    "onnxruntime-web": "1.31.0-dev.20260914-8d85527a0",
     "pg-boss": "12.36.0",
     "prisma": "^6.16.2",
-    "tsx": "4.23.15"
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tsx": "4.23.15",
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
+    "@playwright/test": "1.63.0",
     "@types/node": "^22.18.6",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
+    "esbuild": "0.28.2",
     "eslint": "^9.36.0",
     "eslint-config-next": "^15.5.4",
     "typescript": "^5.9.2",
-    "vitest": "5.0.3",
-    "@playwright/test": "1.63.0"
+    "vitest": "5.0.3"
   },
   "overrides": {
     "postcss": "8.5.29"

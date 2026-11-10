@@ -1,3 +1,5 @@
+> **Archived operator workflow.** The wizard now provides browser GPU generation in its Narrative studio. This separate native runtime is optional and is not needed for the web app. Its 80 GB disk-space estimate applies only to the older Python/ComfyUI installation.
+
 # Run video generation on an M2 Max Mac
 
 This setup targets the owner's Apple M2 Max MacBook Pro, 64 GB unified memory, macOS 26.6.1. It runs ComfyUI with the community LTX-2.3 MLX nodes on Apple's Metal GPU. It uses local open-weight inference: no Comfy Cloud subscription, no five-run quota, and no generation API credits. Electricity, internet and storage are still yours. Actual Mac inference must pass the local test before claiming the worker is ready.
@@ -6,7 +8,7 @@ The starter graph uses the quantized Q4 model and distilled sampler at 1024×576
 
 ## Install once
 
-Allow at least **80 GB of free disk space** for the runtime, model downloads, caches and outputs. The Q4 transformer alone is approximately 12 GB; encoders and dependencies add more. Weights download when the first generation runs. Keep the Mac plugged in.
+The previous 80 GB disk-space check was conservative headroom, not a measured minimum, and has been removed. This optional native runtime still needs disk space for its dependencies, model downloads, caches and outputs. The Q4 transformer alone is approximately 12 GB; encoders and dependencies add more. Weights download when the first generation runs. Keep the Mac plugged in.
 
 On the Mac, open Terminal and run:
 

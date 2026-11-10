@@ -10,6 +10,6 @@ export default async function NarrativePage(props: { params: Promise<{ projectId
   const { projectId } = await props.params, state = await getNarrativePlan({ userId: session.user.id, projectId });
   return <main className="dashboardShell"><Link href={`/app/projects/${projectId}/wizard`}>← Project</Link><p className="eyebrow">Narrative studio</p>
     <h1 className="dashboardTitle">Give the music a story.</h1><p className="dashboardNote">An original Star Trek fan-story template with character continuity, cause and consequence, and full-song shot prompts. Edit the exported JSON to replace the cast or story.</p>
-    <section className="dashboardCard"><NarrativeEditor projectId={projectId} durationMs={state.durationMs} versionId={state.versionId} savedPlan={state.plan} provider={getEnvironment().VIDEO_GENERATION_PROVIDER}/></section>
+    <section className="dashboardCard"><NarrativeEditor projectId={projectId} audioId={state.audioId} durationMs={state.durationMs} versionId={state.versionId} savedPlan={state.plan} provider={getEnvironment().VIDEO_GENERATION_PROVIDER}/></section>
   </main>;
 }
