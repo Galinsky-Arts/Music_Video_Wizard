@@ -15,7 +15,7 @@ curl -fsSL https://raw.githubusercontent.com/Galinsky-Arts/Music_Video_Wizard/ma
 bash /tmp/mvw-gpu-setup.sh
 ```
 
-Review [the installer](../scripts/mac-gpu/setup.sh) before running it. It installs into `~/Library/Application Support/Music Video Wizard GPU`, with an isolated Python environment and its own model cache. It does not use sudo, change system Python, buy credits or start a generation. ComfyUI, the MLX node pack, the MLX pipeline source, uv and cloudflared are pinned; distributed executable archives are checked against recorded SHA-256 digests. The helper resolves one immutable wizard commit for its runtime files, so a changing branch cannot mix versions during installation.
+Review [the installer](../scripts/mac-gpu/setup.sh) before running it. It installs into `~/Library/Application Support/Music Video Wizard GPU`, with an isolated Python environment and its own model cache. It does not use sudo, change system Python, buy credits or start a generation. ComfyUI, the MLX node pack, the MLX pipeline source, uv and cloudflared are pinned; distributed executable archives are checked against recorded SHA-256 digests. The helper pins one immutable wizard commit for its runtime files, so a changing branch cannot mix versions during installation.
 
 The first invocation downloads software. If a package cannot be installed or Metal is unavailable, it stops and reports the error. It does not claim a successful GPU setup merely because downloads completed.
 

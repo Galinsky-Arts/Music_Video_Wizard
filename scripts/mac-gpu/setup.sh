@@ -12,7 +12,7 @@ if [[ "$FREE_KB" -lt 83886080 ]]; then
   echo 'Please free at least 80 GB of disk space before installing the local video runtime and model cache.'
   exit 1
 fi
-SOURCE_COMMIT="${MVW_GPU_SOURCE_COMMIT:-}"
+SOURCE_COMMIT="${MVW_GPU_SOURCE_COMMIT:-b43d4f4d8221dd9fb718ea2650f4e97ef44cd99f}"
 COMFY_COMMIT=61e524bdba7a4e193b45c2697f1af83c1beb86d6
 PLUGIN_COMMIT=d38b63abfffc32520cb31dd8b8471ba7bba52991
 MLX_COMMIT=747b30ef10e92a011e85b2aa0f6c4ee86ced5218
@@ -41,10 +41,6 @@ export UV_CACHE_DIR="$TASK_ROOT/cache/uv"
 export UV_PYTHON_INSTALL_DIR="$TASK_ROOT/python"
 "$TASK_ROOT/bin/uv" python install 3.12
 if [[ ! -x "$TASK_ROOT/venv/bin/python" ]]; then "$TASK_ROOT/bin/uv" venv --python 3.12 "$TASK_ROOT/venv"; fi
-if [[ -z "$SOURCE_COMMIT" ]]; then
-  fetch 'https://api.github.com/repos/Galinsky-Arts/Music_Video_Wizard/commits/main' "$TASK_ROOT/cache/wizard-commit.json"
-  SOURCE_COMMIT="$("$TASK_ROOT/venv/bin/python" -c 'import json,sys; print(json.load(open(sys.argv[1]))["sha"])' "$TASK_ROOT/cache/wizard-commit.json")"
-fi
 if [[ ! "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then echo 'Invalid wizard source revision.'; exit 1; fi
 archive "https://github.com/Comfy-Org/ComfyUI/archive/$COMFY_COMMIT.tar.gz" "$TASK_ROOT/ComfyUI"
 archive "https://github.com/tanis2000/comfyui-ltx2-mlx/archive/$PLUGIN_COMMIT.tar.gz" "$TASK_ROOT/ComfyUI/custom_nodes/comfyui-ltx2-mlx"
