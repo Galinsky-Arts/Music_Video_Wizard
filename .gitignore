@@ -20,3 +20,4 @@ playwright-report/
 # Local Python verification caches
 __pycache__/
 *.pyc
+public/browser-gpu/

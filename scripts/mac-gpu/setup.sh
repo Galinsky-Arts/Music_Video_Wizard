@@ -7,11 +7,8 @@ if [[ "$(uname -s)" != Darwin || "$(uname -m)" != arm64 ]]; then
 fi
 TASK_ROOT="${MVW_GPU_HOME:-$HOME/Library/Application Support/Music Video Wizard GPU}"
 mkdir -p "$TASK_ROOT/bin" "$TASK_ROOT/cache" "$TASK_ROOT/logs"
-FREE_KB="$(df -Pk "$TASK_ROOT" | awk 'NR==2 {print $4}')"
-if [[ "$FREE_KB" -lt 83886080 ]]; then
-  echo 'Please free at least 80 GB of disk space before installing the local video runtime and model cache.'
-  exit 1
-fi
+# Archived native operator runtime; the web app uses browser WebGPU instead.
+echo "This optional legacy installer is not needed for browser generation in the wizard."
 SOURCE_COMMIT="${MVW_GPU_SOURCE_COMMIT:-5c43097fe00ee4fad48a78dbc4320f8a55c87d97}"
 COMFY_COMMIT=61e524bdba7a4e193b45c2697f1af83c1beb86d6
 PLUGIN_COMMIT=d38b63abfffc32520cb31dd8b8471ba7bba52991

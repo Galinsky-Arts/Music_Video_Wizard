@@ -12,7 +12,7 @@ export async function getNarrativePlan(input: { userId: string; projectId: strin
   const latest = await db.assetVersion.findFirst({ where: wherePlan(input.projectId), orderBy: { createdAt: "desc" } });
   const metadata = latest?.metadata as Record<string, unknown> | null;
   const audio = project.audioMasterAssetVersionId ? await db.assetVersion.findUnique({ where: { id: project.audioMasterAssetVersionId } }) : null;
-  return { versionId: latest?.id ?? null, versionNumber: latest?.versionNumber ?? 0, durationMs: audio?.durationMs ?? null,
+  return { versionId: latest?.id ?? null, versionNumber: latest?.versionNumber ?? 0, durationMs: audio?.durationMs ?? null, audioId: audio?.id ?? null,
     plan: metadata?.plan ? narrativePlanSchema.parse(metadata.plan) : null };
 }
 export async function saveNarrativePlan(input: { userId: string; projectId: string; expectedVersionId: string | null; plan: NarrativePlan }) {
