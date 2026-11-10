@@ -1,5 +1,6 @@
 import type { AppEnvironment } from "@/lib/env";
 import { OpenAIImageAdapter } from "./openai-images";
+import { StabilityImageAdapter } from "./stability-images";
 import { ComfyUIVideoAdapter } from "./comfyui-video";
 import { RunwayVideoAdapter } from "./runway-video";
 import type { MediaGenerationAdapter } from "./types";
@@ -34,6 +35,11 @@ export function getConfiguredMediaGenerationAdapters(
   if (env.VIDEO_GENERATION_PROVIDER === "comfyui") {
     if (!env.COMFYUI_BASE_URL || !env.COMFYUI_WORKFLOW_PATH) throw new Error("ComfyUI requires a GPU endpoint and API workflow path.");
     adapters.push(new ComfyUIVideoAdapter(env.COMFYUI_BASE_URL, env.COMFYUI_WORKFLOW_PATH, env.COMFYUI_API_KEY));
+  }
+
+  if (env.IMAGE_GENERATION_PROVIDER === "stability") {
+    if (!env.STABILITY_API_KEY) throw new Error("Stability image generation requires STABILITY_API_KEY.");
+    adapters.push(new StabilityImageAdapter(env.STABILITY_API_KEY));
   }
 
   return adapters;

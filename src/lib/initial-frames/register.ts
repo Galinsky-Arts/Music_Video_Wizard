@@ -11,5 +11,6 @@ export function registerInitialFrameGenerationHandlers(){
     "openai-images:initial-frame",
     handleInitialFrameGeneration
   );
+  generationHandlers.register(GenerationKind.IMAGE, "stability-images:initial-frame", handleInitialFrameGeneration);
   registered=true;
 }

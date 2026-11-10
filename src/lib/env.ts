@@ -39,11 +39,12 @@ const environmentSchema = z
     AUDIO_TRANSCRIPTION_MODEL: z.string().min(1).default("gpt-transcribe"),
     TEXT_GENERATION_PROVIDER: z.enum(["none", "openai"]).default("none"),
     TEXT_GENERATION_MODEL: z.string().min(1).default("gpt-6-sol"),
-    IMAGE_GENERATION_PROVIDER: z.enum(["none", "openai"]).default("none"),
+    IMAGE_GENERATION_PROVIDER: z.enum(["none", "openai", "stability"]).default("none"),
     VIDEO_GENERATION_PROVIDER: z.enum(["none", "runway", "comfyui"]).default("none"),
     COMFYUI_BASE_URL: z.string().url().optional().or(z.literal("")),
     COMFYUI_WORKFLOW_PATH: z.string().min(1).optional().or(z.literal("")),
     COMFYUI_API_KEY: z.string().optional().or(z.literal("")),
+    STABILITY_API_KEY: z.string().optional().or(z.literal("")),
     RUNWAY_API_SECRET: z.string().optional().or(z.literal("")),
     RUNWAY_BASE_URL: z.string().url().default("https://api.dev.runwayml.com"),
     RUNWAY_API_VERSION: z.string().min(1).default("2024-11-06"),
@@ -98,6 +99,10 @@ const environmentSchema = z
         message:
           "OPENAI_API_KEY is required when an OpenAI audio, text, or image provider is enabled"
       });
+    }
+
+    if (env.IMAGE_GENERATION_PROVIDER === "stability" && !env.STABILITY_API_KEY) {
+      ctx.addIssue({ code: "custom", path: ["STABILITY_API_KEY"], message: "STABILITY_API_KEY is required when Stability image generation is enabled." });
     }
 
     if (env.VIDEO_GENERATION_PROVIDER === "comfyui" && (!env.COMFYUI_BASE_URL || !env.COMFYUI_WORKFLOW_PATH)) {
