@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { db } from "../src/lib/db";
 import { getEnvironment } from "../src/lib/env";
+import { readComfyWorkflow } from "../src/lib/media-generation/comfyui-video";
 import { createAssetStorage } from "../src/lib/storage";
 
 function run(command:string,args:string[]){
@@ -130,13 +131,14 @@ function assertProductionConfiguration(){
     "openai",
     "Production image generation provider is not enabled."
   );
-  assert.equal(
-    env.VIDEO_GENERATION_PROVIDER,
-    "runway",
-    "Production video generation provider is not enabled."
-  );
+  assert.notEqual(env.VIDEO_GENERATION_PROVIDER,"none","Production video generation provider is not enabled.");
   assert.ok(env.OPENAI_API_KEY,"OPENAI_API_KEY is required.");
-  assert.ok(env.RUNWAY_API_SECRET,"RUNWAY_API_SECRET is required.");
+  if (env.VIDEO_GENERATION_PROVIDER === "runway") assert.ok(env.RUNWAY_API_SECRET,"RUNWAY_API_SECRET is required.");
+  if (env.VIDEO_GENERATION_PROVIDER === "comfyui") {
+    assert.ok(env.COMFYUI_BASE_URL,"COMFYUI_BASE_URL is required.");
+    assert.ok(env.COMFYUI_WORKFLOW_PATH,"COMFYUI_WORKFLOW_PATH is required.");
+    readComfyWorkflow(env.COMFYUI_WORKFLOW_PATH);
+  }
 
   console.log("production configuration: ok");
 }

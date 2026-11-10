@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { getEnvironment } from "@/lib/env";
+import { getConfiguredMediaGenerationAdapters } from "./factory";
 import { ComfyUIVideoAdapter, readComfyWorkflow } from "./comfyui-video";
 import type { CompiledGenerationRequest } from "@/lib/prompt-compiler/schema";
 const taskId = "11111111-1111-4111-8111-111111111111";
@@ -20,6 +22,14 @@ function json(body: unknown, status = 200) { return new Response(JSON.stringify(
 beforeEach(() => { directory = mkdtempSync(join(tmpdir(), "comfy-test-")); path = join(directory, "workflow.json"); writeFileSync(path, JSON.stringify(workflow)); });
 afterEach(() => { vi.restoreAllMocks(); rmSync(directory, { recursive: true, force: true }); });
 describe("ComfyUI local video adapter", () => {
+  it("is discoverable through the production provider factory only when selected", async () => {
+    const base = { NODE_ENV: "test" as const, DATABASE_URL: "postgresql://localhost/test", BETTER_AUTH_SECRET: "0123456789abcdef0123456789abcdef", BETTER_AUTH_URL: "http://localhost:3000", ASSET_STORAGE_BUCKET: "test", COMFYUI_BASE_URL: "http://127.0.0.1:8188", COMFYUI_WORKFLOW_PATH: path };
+    expect(getConfiguredMediaGenerationAdapters(getEnvironment(base))).toHaveLength(0);
+    const adapters = getConfiguredMediaGenerationAdapters(getEnvironment({...base,VIDEO_GENERATION_PROVIDER:"comfyui"}));
+    expect(adapters.map(a=>a.providerId)).toEqual(["comfyui"]);
+    expect((await adapters[0]!.listModels())[0]!.capabilities.imageToVideo).toBe(true);
+  });
+
   it("uploads an approved frame and submits a real graph with typed values and frame padding", async () => {
     const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(json({ name: "approved.png", subfolder: "" })).mockResolvedValueOnce(json({ prompt_id: taskId }));
     const adapter = new ComfyUIVideoAdapter("https://gpu.example.test", path, "private-worker-key");
