@@ -270,7 +270,9 @@ export default async function ProjectWizardPage(props: {
             </section>
 
             <section className="dashboardCard wizardEditorCard">
-              <p><Link href={`/app/projects/${projectId}/assembly`}>Have a complete visual edit? Import it for review and export.</Link></p>
+              <p><Link href={`/app/projects/${projectId}/assembly`}>Have a complete visual edit? Import it for review and export.</Link>
+              </p>
+              <p><Link href={`/app/projects/${projectId}/narrative`}>Plan a narrative music video</Link></p>
               <ProjectSetupEditor
                 projectId={projectId}
                 initialPayload={selectedPayload}

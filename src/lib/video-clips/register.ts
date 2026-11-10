@@ -11,5 +11,6 @@ export function registerVideoClipGenerationHandlers(){
     "runway:video-clip",
     handleVideoClipGeneration
   );
+  generationHandlers.register(GenerationKind.VIDEO, "comfyui:video-clip", handleVideoClipGeneration);
   registered=true;
 }

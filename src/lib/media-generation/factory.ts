@@ -1,5 +1,6 @@
 import type { AppEnvironment } from "@/lib/env";
 import { OpenAIImageAdapter } from "./openai-images";
+import { ComfyUIVideoAdapter } from "./comfyui-video";
 import { RunwayVideoAdapter } from "./runway-video";
 import type { MediaGenerationAdapter } from "./types";
 
@@ -28,6 +29,11 @@ export function getConfiguredMediaGenerationAdapters(
         env.RUNWAY_API_VERSION
       )
     );
+  }
+
+  if (env.VIDEO_GENERATION_PROVIDER === "comfyui") {
+    if (!env.COMFYUI_BASE_URL || !env.COMFYUI_WORKFLOW_PATH) throw new Error("ComfyUI requires a GPU endpoint and API workflow path.");
+    adapters.push(new ComfyUIVideoAdapter(env.COMFYUI_BASE_URL, env.COMFYUI_WORKFLOW_PATH, env.COMFYUI_API_KEY));
   }
 
   return adapters;

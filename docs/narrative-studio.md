@@ -1,0 +1,9 @@
+# Narrative studio
+
+Project setup links to a versioned narrative planning screen. The built-in **Controlled Chaos: The Resonance** template is an original Star Trek fan story led by Kirk, Spock and Uhura. It contains seven story beats and 35 shots for the measured 230.023-second song. Beats align with the analyzed musical changes, including a quiet decision at 2:34.947–2:46.951 and the climax beginning at 2:46.951.
+
+Kirk's escape attempt aggravates a crystalline cage. Uhura recognizes a call-and-response signal, and Spock decodes its harmonic geometry. Their first answer opens a corridor, but the ship's shields block the final exchange. Kirk must choose to lower them. The successful response releases the trapped intelligence and the Enterprise together, turning the threatening signal into a farewell.
+
+The screen supports editing the title, logline, character descriptions and individual video prompts. Changing a template character description updates the continuity block in its shot prompts. Export/import JSON for broader story or cast changes. Saves are versioned with a compare-and-swap version check, scoped to project membership and the exact measured audio duration. The source project/audio nodes are recorded in the dependency graph. Existing timelines and completed wizard steps are not changed by saving a plan.
+
+These are director-authored planning documents, not fabricated provider results. Use the story during treatment/storyboard development, approve first frames and generate clips through the configured Video Clips provider. The planning screen intentionally does not dispatch provider calls or claim that saved shot prompts are completed footage. The app will report a provider as unavailable until it is configured. Real AI footage requires an accessible GPU worker or an authorized paid provider.

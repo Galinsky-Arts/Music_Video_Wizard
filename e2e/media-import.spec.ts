@@ -46,6 +46,7 @@ test("artists can import frames and clips with providers disabled", async ({ pag
     expect(imported.metadata).toMatchObject({ origin: "import", generationJobId: null, providerId: "user-import" });
     expect(await db.generationJob.count({ where: { projectId: fixture.projectId } })).toBe(0);
     await page.getByRole("button", { name: "Lock Initial Frames" }).click();
+    await expect(page.getByRole("button", { name: /Initial frames LOCKED/ })).toBeVisible();
     await page.goto(`/app/projects/${fixture.projectId}/wizard?step=video-clips`);
     await page.getByLabel("Import your own clip").setInputFiles(mp4);
     await page.getByRole("button", { name: "Import clip", exact: true }).click();
