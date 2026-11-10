@@ -16,3 +16,7 @@ next-env.d.ts
 *.tsbuildinfo
 test-results/
 playwright-report/
+
+# Local Python verification caches
+__pycache__/
+*.pyc
