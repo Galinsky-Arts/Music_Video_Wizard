@@ -12,7 +12,7 @@ if [[ "$FREE_KB" -lt 83886080 ]]; then
   echo 'Please free at least 80 GB of disk space before installing the local video runtime and model cache.'
   exit 1
 fi
-SOURCE_COMMIT="${MVW_GPU_SOURCE_COMMIT:-b43d4f4d8221dd9fb718ea2650f4e97ef44cd99f}"
+SOURCE_COMMIT="${MVW_GPU_SOURCE_COMMIT:-5c43097fe00ee4fad48a78dbc4320f8a55c87d97}"
 COMFY_COMMIT=61e524bdba7a4e193b45c2697f1af83c1beb86d6
 PLUGIN_COMMIT=d38b63abfffc32520cb31dd8b8471ba7bba52991
 MLX_COMMIT=747b30ef10e92a011e85b2aa0f6c4ee86ced5218
