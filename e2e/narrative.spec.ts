@@ -1,13 +1,25 @@
 import { randomUUID, createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { expect, test } from "@playwright/test";
+import { expect, test, type APIRequestContext } from "@playwright/test";
 import { db } from "../src/lib/db";
 import { createRenderFixture } from "./fixtures/render-project";
 import { narrativePlanSchema } from "../src/lib/narrative/plan";
 
+async function signup(request: APIRequestContext, name: string) {
+  const data = { name, email: `story-${randomUUID()}@example.test`, password: "Narrative-Test-Password-2026!" };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await request.post("/api/auth/sign-up/email", { data });
+    if (response.status() !== 429) { expect(response.ok(), `Signup HTTP ${response.status()}`).toBe(true); return response; }
+    // Respect the production signup limit when the complete browser suite shares one IP.
+    const seconds = Math.max(1, Math.min(60, Number(response.headers()["retry-after"]) || 60));
+    await new Promise(resolve=>setTimeout(resolve,seconds*1000));
+  }
+  throw new Error("Signup rate limit did not clear within the test window.");
+}
+
 test("a director can version and export a narrative without inventing generation or changing the edit", async ({ page, browser }) => {
-  test.setTimeout(120000);
-  const account = await page.request.post("/api/auth/sign-up/email", { data: { name: "Narrative director", email: `story-${randomUUID()}@example.test`, password: "Narrative-Test-Password-2026!" } });
+  test.setTimeout(180000);
+  const account = await signup(page.request, "Narrative director");
   expect(account.ok()).toBe(true); const userId = ((await account.json()) as { user: { id: string } }).user.id;
   const fixture = await createRenderFixture(userId, true, 30); let otherUserId: string | undefined;
   try {
@@ -16,7 +28,7 @@ test("a director can version and export a narrative without inventing generation
     const stranger = await browser.newContext();
     try {
       expect((await stranger.request.get(endpoint)).status()).toBe(401);
-      const other = await stranger.request.post("/api/auth/sign-up/email", { data: { name: "Other director", email: `other-story-${randomUUID()}@example.test`, password: "Narrative-Test-Password-2026!" } });
+      const other = await signup(stranger.request, "Other director");
       otherUserId = ((await other.json()) as { user: { id: string } }).user.id;
       expect((await stranger.request.get(endpoint)).status()).toBe(404);
     } finally { await stranger.close(); }
