@@ -58,6 +58,11 @@ describe("ComfyUI local video adapter", () => {
     expect(fetch.mock.calls[1]![1]?.headers).toMatchObject({ authorization: "Bearer private-worker-key" });
     expect(JSON.stringify(result)).not.toContain("gpu.example.test");
   });
+  it("accepts native SaveVideo MP4 entries under the images history key", async () => {
+    vi.spyOn(globalThis,"fetch").mockResolvedValueOnce(json({[taskId]:{status:{completed:true},outputs:{"5":{images:[{filename:"native.mp4",type:"output"}]}}}})).mockResolvedValueOnce(new Response("synthetic-native-video"));
+    const a = new ComfyUIVideoAdapter("http://127.0.0.1:8188",path);
+    expect((await a.poll({model:(await a.listModels())[0]!,externalJobId:taskId})).status).toBe("SUCCEEDED");
+  });
   it("does not mistake an empty history or failed graph for generated video", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(json({})).mockResolvedValueOnce(json({ [taskId]: { status: { status_str: "error", completed: false } } }));
     const a = new ComfyUIVideoAdapter("http://127.0.0.1:8188", path); const model = (await a.listModels())[0]!;

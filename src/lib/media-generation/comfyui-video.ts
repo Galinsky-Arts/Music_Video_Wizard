@@ -96,13 +96,13 @@ export class ComfyUIVideoAdapter implements MediaGenerationAdapter {
   }
   async poll(input: { model: MediaModelDescriptor; externalJobId: string }): Promise<MediaGenerationResult> {
     if (input.model.providerId !== this.providerId || input.model.modelId !== this.workflow.modelId || !z.string().uuid().safeParse(input.externalJobId).success) throw new MediaProviderError("Invalid ComfyUI task.", true);
-    const history = await (await this.request("/history/" + encodeURIComponent(input.externalJobId))).json() as Record<string, { status?: { completed?: boolean; status_str?: string }; outputs?: Record<string, { gifs?: Array<{ filename: string; subfolder?: string; type?: string }>; videos?: Array<{ filename: string; subfolder?: string; type?: string }> }> }>;
+    const history = await (await this.request("/history/" + encodeURIComponent(input.externalJobId))).json() as Record<string, { status?: { completed?: boolean; status_str?: string }; outputs?: Record<string, { gifs?: Array<{ filename: string; subfolder?: string; type?: string }>; videos?: Array<{ filename: string; subfolder?: string; type?: string }>; images?: Array<{ filename: string; subfolder?: string; type?: string }> }> }>;
     const task = history[input.externalJobId];
     if (!task) return { externalJobId: input.externalJobId, status: "QUEUED", outputs: [] };
     if (task.status?.status_str === "error") return { externalJobId: input.externalJobId, status: "FAILED", outputs: [], errorMessage: "The ComfyUI workflow failed. Inspect the GPU worker's execution log." };
     if (!task.status?.completed) return { externalJobId: input.externalJobId, status: "RUNNING", outputs: [] };
     const output = task.outputs?.[this.workflow.outputNodeId];
-    const video = [...(output?.gifs ?? []), ...(output?.videos ?? [])].find(item => item.filename.toLowerCase().endsWith(".mp4"));
+    const video = [...(output?.gifs ?? []), ...(output?.videos ?? []), ...(output?.images ?? [])].find(item => item.filename.toLowerCase().endsWith(".mp4"));
     if (!video || /[\\/]/.test(video.filename) || video.filename.includes("..") || (video.subfolder ?? "").split(/[\\/]/).includes("..") || (video.subfolder ?? "").startsWith("/") || !["output", "temp"].includes(video.type ?? "output")) throw new MediaProviderError("ComfyUI completed without a valid MP4 at the configured output node.", true);
     const query = new URLSearchParams({ filename: video.filename, subfolder: video.subfolder ?? "", type: video.type ?? "output" });
     const bytes = await boundedBytes(await this.request("/view?" + query), 50 * 1024 * 1024);
