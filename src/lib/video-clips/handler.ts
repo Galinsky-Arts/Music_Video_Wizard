@@ -28,6 +28,7 @@ import type {
 } from "@/lib/media-generation/types";
 import { shotSpecificationSpecSchema } from "@/lib/shot-specifications/schema";
 import { createAssetStorage,type AssetStorage } from "@/lib/storage";
+import { verifyGeneratedClip } from "./verification";
 import { queuedVideoClipGenerationSchema } from "./input";
 import { completeVideoClipsIfCovered,VideoClipsError } from "./service";
 import {
@@ -55,19 +56,6 @@ function resumeTaskId(value:unknown):string|null{
   return typeof id==="string"&&id?id:null;
 }
 
-function generatedDurationFromMetadata(
-  value:unknown,
-  fallbackMs:number
-){
-  if(!value||typeof value!=="object"||Array.isArray(value)) return fallbackMs;
-  const request=(value as Record<string,unknown>).providerRequestSnapshot;
-  if(!request||typeof request!=="object"||Array.isArray(request)) return fallbackMs;
-  const duration=(request as Record<string,unknown>).duration;
-  return typeof duration==="number"&&Number.isFinite(duration)&&duration>0
-    ?Math.round(duration*1000)
-    :fallbackMs;
-}
-
 async function firstFrameReference(
   storage:AssetStorage,
   input:{storageKey:string;contentType:string}
@@ -89,7 +77,7 @@ async function firstFrameReference(
       "data:"+input.contentType+";base64,"+bytes.toString("base64");
     if(dataUri.length>5*1024*1024){
       throw new PermanentGenerationError(
-        "The Initial Frame is too large for Runway's inline data-URI limit. "+
+        "The Initial Frame is too large for the inline first-frame limit. "+
         "Use HTTPS-backed asset storage or a smaller frame asset."
       );
     }
@@ -309,14 +297,10 @@ export async function handleVideoClipGeneration(
     throw new PermanentGenerationError("Generated Video Clip is empty.");
   }
   const checksum=createHash("sha256").update(bytes).digest("hex");
-  const refreshedJob=await db.generationJob.findUnique({
-    where:{id:job.id},
-    select:{responseMetadata:true}
-  });
-  const generatedDurationMs=generatedDurationFromMetadata(
-    refreshedJob?.responseMetadata,
-    queued.request.generationDurationMs
-  );
+  const env = getEnvironment();
+  const verified = await verifyGeneratedClip({ bytes, minimumDurationMs: queued.request.generationDurationMs,
+    maxBytes: env.MAX_MEDIA_UPLOAD_BYTES, ffmpeg: env.VIDEO_RENDER_FFMPEG, ffprobe: env.VIDEO_RENDER_FFPROBE, signal: context.signal });
+  const generatedDurationMs = verified.durationMs!;
 
   const assets=await db.$transaction(tx=>
     videoClipAssetsForProject(tx,queued.projectId)
@@ -330,7 +314,7 @@ export async function handleVideoClipGeneration(
   const assetVersionId=job.id;
   const nodeId=randomUUID();
   const versionNumber=(priorAsset?.versions[0]?.versionNumber??0)+1;
-  const contentType=output.contentType||"video/mp4";
+  const contentType=verified.contentType;
   const extension=contentType==="video/webm"?"webm":"mp4";
   const storageKey=[
     "workspaces",job.workspaceId,
@@ -408,7 +392,9 @@ export async function handleVideoClipGeneration(
           byteSize:BigInt(bytes.byteLength),
           checksumSha256:checksum,
           durationMs:generatedDurationMs,
-          frameRate:queued.request.frameRate,
+          frameRate:verified.frameRate,
+          width:verified.width,
+          height:verified.height,
           metadata:{
             role:"video-clip",
             logicalShotId:currentSource.shotId,

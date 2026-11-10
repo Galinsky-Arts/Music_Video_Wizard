@@ -9,7 +9,7 @@ import { ensureWizardProgress } from "../../src/lib/wizard/service";
 import { createAssetStorage } from "../../src/lib/storage";
 import { runMediaProcess } from "../../src/lib/media/process";
 
-export async function createRenderFixture(userId: string, fresh = false) {
+export async function createRenderFixture(userId: string, fresh = false, durationSeconds = 3) {
   const directory = await mkdtemp(join(tmpdir(), "mvw-browser-render-"));
   const ffmpeg = process.env.VIDEO_RENDER_FFMPEG ?? "ffmpeg";
   const signal = AbortSignal.timeout(60_000);
@@ -52,7 +52,7 @@ export async function createRenderFixture(userId: string, fresh = false) {
   };
   try {
     const audioPath = join(directory, "tone.wav");
-    await run(["-v", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=3", "-y", audioPath]);
+    await run(["-v", "error", "-f", "lavfi", "-i", `sine=frequency=440:duration=${durationSeconds}`, "-y", audioPath]);
     const created = await createProjectWithAudio({ userId, displayName: "Render acceptance",
       project: { title: "Synthetic final delivery", description: "Browser-to-FFmpeg acceptance fixture", aspectRatio: "16:9", frameRate: 24 },
       audio: { originalFileName: "tone.wav", bytes: await readFile(audioPath) } });
@@ -60,7 +60,7 @@ export async function createRenderFixture(userId: string, fresh = false) {
     const project = await db.project.findUniqueOrThrow({ where: { id: projectId } });
     workspaceId = project.workspaceId;
     await db.projectVersion.update({ where: { id: created.projectVersionId }, data: { outputWidth: 160, outputHeight: 90 } });
-    await db.assetVersion.update({ where: { id: created.audioAssetVersionId }, data: { durationMs: 3000 } });
+    await db.assetVersion.update({ where: { id: created.audioAssetVersionId }, data: { durationMs: durationSeconds * 1000 } });
     await ensureWizardProgress({ userId, projectId });
     if (fresh) return { ...created, cleanup };
     const timeline = await db.timeline.create({ data: { projectId, name: "Synthetic locked refinement", kind: "WORKING" } });

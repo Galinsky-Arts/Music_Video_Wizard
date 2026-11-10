@@ -68,3 +68,13 @@ describe("getEnvironment", () => {
     }).NODE_ENV).toBe("development");
   });
 });
+
+
+describe("local GPU configuration", () => {
+  it("requires an endpoint and workflow for ComfyUI, without requiring a paid key", () => {
+    expect(() => getEnvironment({ ...validEnvironment, VIDEO_GENERATION_PROVIDER: "comfyui" })).toThrow(/COMFYUI/);
+    const env = getEnvironment({ ...validEnvironment, VIDEO_GENERATION_PROVIDER: "comfyui", COMFYUI_BASE_URL: "http://127.0.0.1:8188", COMFYUI_WORKFLOW_PATH: "/workflows/wan-api.json" });
+    expect(env.VIDEO_GENERATION_PROVIDER).toBe("comfyui");
+    expect(env.RUNWAY_API_SECRET).toBeUndefined();
+  });
+});
