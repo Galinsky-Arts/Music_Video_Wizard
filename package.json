@@ -48,6 +48,7 @@
     "ops:production-gate": "tsx scripts/ops-production-gate.ts",
     "test:render": "tsx scripts/render-smoke.ts",
     "test:package": "tsx scripts/project-package-smoke.ts",
+    "test:usage": "tsx scripts/usage-smoke.ts",
     "predev": "node scripts/build-browser-gpu.mjs",
     "prebuild": "node scripts/build-browser-gpu.mjs"
   },

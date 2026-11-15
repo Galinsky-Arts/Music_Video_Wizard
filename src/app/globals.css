@@ -3012,3 +3012,21 @@ h1 {
 .mediaImportForm { display: grid; gap: .6rem; margin: 1rem 0; padding: 1rem; border: 1px solid var(--border, #ddd); border-radius: .75rem; }
 .mediaImportForm input { max-width: 100%; min-width: 0; }
 .mediaImportForm small { opacity: .75; }
+
+.usageTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.usageTable th,
+.usageTable td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+  text-align: left;
+  vertical-align: top;
+}
+
+.usageTable thead th {
+  font-weight: 600;
+}
