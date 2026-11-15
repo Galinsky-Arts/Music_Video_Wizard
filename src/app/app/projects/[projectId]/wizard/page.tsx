@@ -225,6 +225,13 @@ export default async function ProjectWizardPage(props: {
             Project version {view.projectVersion.versionNumber} ·{" "}
             {view.projectVersion.lifecycle}
           </p>
+          <a
+            className="secondaryButton linkButton"
+            href={`/api/projects/${projectId}/package`}
+            download
+          >
+            Export project package
+          </a>
         </div>
 
         <WizardNavigation
