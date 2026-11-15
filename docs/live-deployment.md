@@ -10,7 +10,7 @@ The Music Video Wizard was deployed on November 9, 2026, using directly managed 
 
 All twelve Prisma migrations applied at startup. `/api/ready` returned configuration and database checks `ok`.
 
-The approved deployment uses the existing authenticated bounded-drain route in the same Render service. `JOB_EXECUTOR_URL` points to the web origin. On-demand enqueue wakes this route with a private server-only secret; no separate executor service was created. The reference two-service `render.yaml` is not managing these directly created resources and must be reconciled deliberately before using a Blueprint. No scheduled Neon recovery function has been provisioned.
+The approved deployment uses the existing authenticated bounded-drain route in the same Render service. `JOB_EXECUTOR_URL` points to the web origin. On-demand enqueue wakes this route with a private server-only secret; no separate executor service was created. `render.yaml` now mirrors this single free Docker service (health check `/api/ready`, providers `none`, same-service drain executor); it is a reference and does not by itself manage the directly created resources. No scheduled Neon recovery function has been provisioned.
 
 Database credentials, scoped storage credentials and generated authentication/job secrets are private Render environment variables. They are not stored here. Text/image/video providers are disabled to honor free/local-only generation. Local analysis, imported media, assembly and FFmpeg rendering do not require paid provider APIs.
 

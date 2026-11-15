@@ -1,11 +1,22 @@
+# Mirrors the live Render service (workspace "Galinsky Arts"):
+# one free Docker web service. Background generation runs in the same service
+# through the authenticated bounded-drain route (/api/internal/jobs/drain),
+# woken on demand via JOB_EXECUTOR_URL (= this service's own origin).
+# Paid generation providers are disabled ("none"); free/local analysis,
+# imported media, assembly and FFmpeg rendering need no provider keys.
+# Free web services do not support preDeployCommand; migrations run in
+# `npm run start:production` (prisma migrate deploy && next start).
 services:
   - type: web
-    name: music-video-wizard-web
+    name: music-video-wizard-galinsky-arts
     runtime: docker
+    plan: free
+    region: virginia
+    branch: main
+    autoDeploy: true
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /api/ready
-    preDeployCommand: npm run db:deploy
     envVars:
       - key: NODE_ENV
         value: production
@@ -22,93 +33,40 @@ services:
       - key: ASSET_STORAGE_ENDPOINT
         sync: false
       - key: ASSET_STORAGE_REGION
-        sync: false
+        value: us-east-1
       - key: ASSET_STORAGE_ACCESS_KEY_ID
         sync: false
       - key: ASSET_STORAGE_SECRET_ACCESS_KEY
         sync: false
       - key: ASSET_STORAGE_FORCE_PATH_STYLE
         value: "true"
+      # Providers stay disabled until the owner supplies keys and opts in.
       - key: AUDIO_TRANSCRIPTION_PROVIDER
-        value: openai
-      - key: AUDIO_TRANSCRIPTION_MODEL
-        value: gpt-transcribe
+        value: none
       - key: TEXT_GENERATION_PROVIDER
-        value: openai
+        value: none
       - key: IMAGE_GENERATION_PROVIDER
-        value: openai
+        value: none
       - key: VIDEO_GENERATION_PROVIDER
-        value: runway
-      - key: OPENAI_API_KEY
+        value: none
+      - key: STABILITY_API_KEY
         sync: false
-      - key: OPENAI_BASE_URL
-        value: https://api.openai.com
-      - key: RUNWAY_API_SECRET
-        sync: false
-      - key: RUNWAY_BASE_URL
-        value: https://api.dev.runwayml.com
-      - key: RUNWAY_API_VERSION
-        value: "2024-11-06"
       - key: AUDIO_ANALYSIS_PYTHON
         value: python
       - key: AUDIO_ANALYSIS_FFMPEG
         value: ffmpeg
-
-  - type: web
-    name: music-video-wizard-executor
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    healthCheckPath: /api/health
-    plan: free
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        sync: false
-      - key: BETTER_AUTH_SECRET
-        sync: false
-      - key: BETTER_AUTH_URL
-        sync: false
-      - key: ASSET_STORAGE_DRIVER
-        value: s3
-      - key: ASSET_STORAGE_BUCKET
-        sync: false
-      - key: ASSET_STORAGE_ENDPOINT
-        sync: false
-      - key: ASSET_STORAGE_REGION
-        sync: false
-      - key: ASSET_STORAGE_ACCESS_KEY_ID
-        sync: false
-      - key: ASSET_STORAGE_SECRET_ACCESS_KEY
-        sync: false
-      - key: ASSET_STORAGE_FORCE_PATH_STYLE
-        value: "true"
-      - key: AUDIO_TRANSCRIPTION_PROVIDER
-        value: openai
-      - key: AUDIO_TRANSCRIPTION_MODEL
-        value: gpt-transcribe
-      - key: TEXT_GENERATION_PROVIDER
-        value: openai
-      - key: IMAGE_GENERATION_PROVIDER
-        value: openai
-      - key: VIDEO_GENERATION_PROVIDER
-        value: runway
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: OPENAI_BASE_URL
-        value: https://api.openai.com
-      - key: RUNWAY_API_SECRET
-        sync: false
-      - key: RUNWAY_BASE_URL
-        value: https://api.dev.runwayml.com
-      - key: RUNWAY_API_VERSION
-        value: "2024-11-06"
-      - key: AUDIO_ANALYSIS_PYTHON
-        value: python
-      - key: AUDIO_ANALYSIS_FFMPEG
+      - key: VIDEO_RENDER_FFMPEG
         value: ffmpeg
+      - key: VIDEO_RENDER_FFPROBE
+        value: ffprobe
+      # Same-service executor via the drain route; small batches for 512 MB.
+      - key: JOB_EXECUTOR_URL
+        sync: false
       - key: JOB_DRAIN_SECRET
         sync: false
       - key: JOB_DRAIN_BATCH_SIZE
-        value: "2"
+        value: "1"
+      - key: JOB_WORKER_CONCURRENCY
+        value: "1"
+      - key: JOB_WORKSPACE_CONCURRENCY
+        value: "1"
