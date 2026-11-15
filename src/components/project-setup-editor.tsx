@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLatest } from "./use-latest";
 
 interface ProjectSetupDraft {
   title: string;
@@ -111,6 +112,7 @@ export function ProjectSetupEditor(props: {
     }
   }
 
+  const saveDraftRef = useLatest(saveDraft);
   useEffect(() => {
     const json = JSON.stringify(payload);
     latestJsonRef.current = json;
@@ -120,11 +122,11 @@ export function ProjectSetupEditor(props: {
       current === "saving" ? current : "unsaved"
     );
     const timer = window.setTimeout(() => {
-      void saveDraft(payload, json);
+      void saveDraftRef.current(payload, json);
     }, 700);
 
     return () => window.clearTimeout(timer);
-  }, [payload, editable]);
+  }, [payload, editable, saveDraftRef]);
 
   async function transition(action: "complete" | "lock" | "reopen") {
     setMessage(null);

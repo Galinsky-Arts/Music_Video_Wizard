@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect,useMemo,useState } from "react";
+import { useLatest } from "./use-latest";
 import { useRouter } from "next/navigation";
 
 type JobView={
@@ -107,9 +108,11 @@ export function ShotSpecificationsEditor(props:StateView&{projectId:string}){
     setState(next);
   }
 
+  const refreshRef=useLatest(refresh);
+  const recentJobId=state.recentJob?.id;
   useEffect(()=>{
-    if(!active||!state.recentJob) return;
-    const jobId=state.recentJob.id;
+    if(!active||!recentJobId) return;
+    const jobId=recentJobId;
     const timer=window.setInterval(async()=>{
       const response=await fetch("/api/jobs/"+jobId,{cache:"no-store"});
       if(!response.ok) return;
@@ -117,7 +120,7 @@ export function ShotSpecificationsEditor(props:StateView&{projectId:string}){
       setState(current=>({...current,recentJob:next}));
       if(["SUCCEEDED","FAILED","CANCELLED"].includes(next.status)){
         window.clearInterval(timer);
-        await refresh();
+        await refreshRef.current();
         setMessage(
           next.status==="SUCCEEDED"
             ?"Shot Specifications generated. Review every shot before locking."
@@ -127,7 +130,7 @@ export function ShotSpecificationsEditor(props:StateView&{projectId:string}){
       }
     },2000);
     return ()=>window.clearInterval(timer);
-  },[active,state.recentJob?.id,router]);
+  },[active,recentJobId,router,refreshRef]);
 
   async function generate(){
     setBusy(true);

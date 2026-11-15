@@ -2,6 +2,7 @@
 
 import type { Route } from "next";
 import { useEffect, useMemo, useState } from "react";
+import { useLatest } from "./use-latest";
 import { useRouter } from "next/navigation";
 import type { CreativeBriefDraft } from "@/lib/creative-brief/input";
 import type { ConceptContent } from "@/lib/concepts/schema";
@@ -303,6 +304,7 @@ export function ConceptsEditor(props: {
     setJob(state.recentJob);
   }
 
+  const refreshStateRef=useLatest(refreshState);
   useEffect(() => {
     if (!active || !job) return;
     const timer = window.setInterval(async () => {
@@ -319,7 +321,7 @@ export function ConceptsEditor(props: {
         next.status === "CANCELLED"
       ) {
         window.clearInterval(timer);
-        await refreshState();
+        await refreshStateRef.current();
         if (next.status === "SUCCEEDED") {
           setStatus("IN_PROGRESS");
           setMessage("Concept generation completed.");
@@ -328,7 +330,7 @@ export function ConceptsEditor(props: {
       }
     }, 2000);
     return () => window.clearInterval(timer);
-  }, [active, job, router]);
+  }, [active, job, router, refreshStateRef]);
 
   async function initialize() {
     setBusy(true);

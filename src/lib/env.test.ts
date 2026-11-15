@@ -32,8 +32,9 @@ describe("getEnvironment", () => {
   });
 
   it("rejects a missing database URL", () => {
-    const { DATABASE_URL: _databaseUrl, ...withoutDatabase } = validEnvironment;
-    expect(() => getEnvironment(withoutDatabase)).toThrow(/DATABASE_URL/);
+    const withoutDatabase: Partial<Record<keyof typeof validEnvironment, string>> = { ...validEnvironment };
+    delete withoutDatabase.DATABASE_URL;
+    expect(() => getEnvironment(withoutDatabase as NodeJS.ProcessEnv)).toThrow(/DATABASE_URL/);
   });
 
   it("rejects an unsafe short authentication secret", () => {

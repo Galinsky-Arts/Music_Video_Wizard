@@ -408,7 +408,7 @@ export async function completeSequenceMap(input:{
 }) {
   const projectVersion=await ensureWizardProgress(input);
   return db.$transaction(async tx=>{
-    const context=await mutationContext(tx,{
+    await mutationContext(tx,{
       ...input,
       projectVersionId:projectVersion.id
     });

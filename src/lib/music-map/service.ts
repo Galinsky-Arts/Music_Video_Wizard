@@ -19,7 +19,6 @@ import {
   completeAutomaticWizardStepInTransaction,
   ensureWizardProgress,
   saveManagedWizardStepInTransaction,
-  WizardError,
   WizardLockedError
 } from "@/lib/wizard/service";
 
