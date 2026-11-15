@@ -16,6 +16,7 @@ import { StoryboardEngine } from "@/components/storyboard-engine";
 import { ShotSpecificationsEditor } from "@/components/shot-specifications-editor";
 import { InitialFramesEditor } from "@/components/initial-frames-editor";
 import { VideoClipsEditor } from "@/components/video-clips-editor";
+import { AnimaticEditor } from "@/components/animatic-editor";
 import { FirstCutEditor } from "@/components/first-cut-editor";
 import { RefinementEditor } from "@/components/refinement-editor";
 import { FinishExportEditor } from "@/components/finish-export-editor";
@@ -36,6 +37,7 @@ import { getStoryboardState } from "@/lib/storyboard/service";
 import { getShotSpecificationsState } from "@/lib/shot-specifications/service";
 import { getInitialFramesState } from "@/lib/initial-frames/service";
 import { getVideoClipsState } from "@/lib/video-clips/service";
+import { getAnimaticState } from "@/lib/animatic/service";
 import { getAutomaticFirstCutState } from "@/lib/first-cut/service";
 import { getRefinementState } from "@/lib/refinement/service";
 import { getFinishExportState } from "@/lib/finish-export/service";
@@ -166,6 +168,14 @@ export default async function ProjectWizardPage(props: {
   const initialFramesState =
     selected.definition.editor === "initial-frames"
       ? await getInitialFramesState({
+          userId: session.user.id,
+          projectId
+        })
+      : null;
+
+  const animaticState =
+    selected.definition.editor === "animatic"
+      ? await getAnimaticState({
           userId: session.user.id,
           projectId
         })
@@ -627,6 +637,22 @@ export default async function ProjectWizardPage(props: {
               wizardRevision={initialFramesState.wizardRevision}
               wizardStatus={initialFramesState.wizardStatus}
               wizardLocked={initialFramesState.wizardLocked}
+            />
+          </section>
+        ) : selected.definition.editor === "animatic" &&
+          animaticState ? (
+          <section className="dashboardCard wizardEditorCard">
+            <AnimaticEditor
+              projectId={projectId}
+              audioUrl={audioUrl}
+              sourceReady={animaticState.sourceReady}
+              sourceError={animaticState.sourceError}
+              plan={animaticState.plan}
+              stillUrls={animaticState.stillUrls}
+              wizardRevision={animaticState.wizardRevision}
+              wizardStatus={animaticState.wizardStatus}
+              wizardLocked={animaticState.wizardLocked}
+              reviewedCurrent={animaticState.reviewedCurrent}
             />
           </section>
         ) : selected.definition.editor === "video-clips" &&

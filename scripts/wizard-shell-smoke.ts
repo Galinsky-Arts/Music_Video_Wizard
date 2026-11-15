@@ -15,6 +15,11 @@ import {
   WizardLockedError
 } from "../src/lib/wizard/service";
 import { WIZARD_STEPS } from "../src/lib/wizard/registry";
+import {
+  AnimaticError,
+  completeAnimaticReview,
+  getAnimaticState
+} from "../src/lib/animatic/service";
 
 async function main() {
   const userId = randomUUID();
@@ -235,6 +240,31 @@ async function main() {
     });
     assert.equal(navigated.currentStepKey, "concepts");
     assert.equal(navigated.revision, 6);
+
+    // Existing projects created before a step was added are backfilled.
+    await db.wizardStepState.deleteMany({
+      where: { wizardProgressId: navigated.id, stepKey: "animatic" }
+    });
+    const backfilled = await ensureWizardProgress({ userId, projectId });
+    assert.ok(
+      backfilled.wizardProgress?.steps.some((step) => step.stepKey === "animatic")
+    );
+
+    const animatic = await getAnimaticState({ userId, projectId });
+    assert.equal(animatic.sourceReady, false);
+    assert.equal(animatic.plan, null);
+    assert.match(animatic.sourceError ?? "", /Shot Specifications/);
+    await assert.rejects(
+      completeAnimaticReview({
+        userId,
+        projectId,
+        expectedWizardRevision: navigated.revision
+      }),
+      AnimaticError
+    );
+    await assert.rejects(
+      getAnimaticState({ userId: randomUUID(), projectId })
+    );
 
     console.log("Wizard shell smoke test passed.");
   } finally {

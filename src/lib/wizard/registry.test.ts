@@ -28,6 +28,15 @@ describe("wizard registry", () => {
     expect(firstCut!.ordinal).toBeGreaterThan(clips!.ordinal);
   });
 
+  it("places the animatic between approved stills and video generation", () => {
+    const frames = getWizardStepDefinition("initial-frames")!;
+    const animatic = getWizardStepDefinition("animatic")!;
+    const clips = getWizardStepDefinition("video-clips")!;
+    expect(animatic.editor).toBe("animatic");
+    expect(animatic.ordinal).toBeGreaterThan(frames.ordinal);
+    expect(animatic.ordinal).toBeLessThan(clips.ordinal);
+  });
+
   it("finds downstream stages for impact warnings", () => {
     const downstream = downstreamWizardSteps("creative-brief");
     expect(downstream[0]?.key).toBe("concepts");
