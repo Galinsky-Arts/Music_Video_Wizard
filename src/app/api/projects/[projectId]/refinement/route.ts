@@ -10,6 +10,8 @@ import {
   RefinementError,
   replaceRefinementClip,
   retimeRefinementBoundary,
+  updateRefinementFraming,
+  updateRefinementOverlays,
   updateRefinementTransition
 } from "@/lib/refinement/service";
 import { WizardError,WizardLockedError } from "@/lib/wizard/service";
@@ -98,6 +100,22 @@ export async function POST(
         kind:body.kind,
         durationMs:body.durationMs,
         note:body.note
+      }));
+    }
+    if(body.action==="framing"){
+      return Response.json(await updateRefinementFraming({
+        ...base,
+        expectedTimelineVersionId:body.expectedTimelineVersionId,
+        position:body.position,
+        framing:body.framing
+      }));
+    }
+    if(body.action==="overlays"){
+      return Response.json(await updateRefinementOverlays({
+        ...base,
+        expectedTimelineVersionId:body.expectedTimelineVersionId,
+        kind:body.kind,
+        overlays:body.overlays
       }));
     }
     if(body.action==="complete"){

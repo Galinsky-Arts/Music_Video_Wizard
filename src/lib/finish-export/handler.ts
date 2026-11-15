@@ -1,6 +1,6 @@
 import { createHash,randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { mkdtemp,rm,stat } from "node:fs/promises";
+import { mkdtemp,rm,stat,writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { GenerationJob } from "@prisma/client";
@@ -25,6 +25,7 @@ import {
   completeAutomaticWizardStepInTransaction
 } from "@/lib/wizard/service";
 import { buildFfmpegRenderCommand } from "./ffmpeg";
+import { resolveOverlayFont } from "./fonts";
 import { runMediaProcess } from "@/lib/media/process";
 import { verifyRenderedMaster, type VerifiedMaster } from "./verification";
 import { queuedMasterRenderSchema } from "./input";
@@ -178,6 +179,20 @@ export async function handleFinalMasterRender(
     );
     await storage.downloadToFile(audio.storageKey,audioPath);
 
+    const overlays=queued.manifest.overlays??[];
+    const overlayTextPaths:string[]=[];
+    for(const [index,overlay] of overlays.entries()){
+      const path=join(workspace,"overlay-"+String(index)+".txt");
+      await writeFile(path,overlay.text,{encoding:"utf8",mode:0o600});
+      overlayTextPaths.push(path);
+    }
+    const fontFile=overlays.length?resolveOverlayFont():null;
+    if(overlays.length&&!fontFile){
+      throw new PermanentGenerationError(
+        "Titles or captions need a font, but no supported font is installed on this renderer."
+      );
+    }
+
     const outputPath=join(workspace,"master.mp4");
     const env=getEnvironment();
     const command=buildFfmpegRenderCommand({
@@ -185,7 +200,9 @@ export async function handleFinalMasterRender(
       manifest:queued.manifest,
       clipPaths,
       audioPath,
-      outputPath
+      outputPath,
+      overlayTextPaths,
+      fontFile
     });
 
     await context.reportProgress(35,"Rendering final master with FFmpeg.");

@@ -42,7 +42,13 @@ export const renderManifestSchema=z.object({
     timelineStartMs:z.number().int().min(0),
     timelineEndMs:z.number().int().positive(),
     sourceStartMs:z.number().int().min(0),
-    sourceEndMs:z.number().int().positive()
+    sourceEndMs:z.number().int().positive(),
+    framing:z.object({
+      mode:z.enum(["fit","fill"]),
+      zoom:z.number().min(1).max(4),
+      focusX:z.number().min(0).max(1),
+      focusY:z.number().min(0).max(1)
+    }).strict().optional()
   }).strict()).min(1),
   transitions:z.array(z.object({
     fromPosition:z.number().int().min(0),
@@ -50,7 +56,14 @@ export const renderManifestSchema=z.object({
     kind:z.string().min(1),
     durationMs:z.number().int().min(0),
     parameters:z.unknown()
-  }).strict())
+  }).strict()),
+  overlays:z.array(z.object({
+    kind:z.enum(["title","caption"]),
+    text:z.string().min(1).max(200),
+    startMs:z.number().int().min(0),
+    endMs:z.number().int().positive(),
+    placement:z.enum(["top","center","bottom"])
+  }).strict()).max(620).optional()
 }).strict();
 
 export const queuedMasterRenderSchema=z.object({
