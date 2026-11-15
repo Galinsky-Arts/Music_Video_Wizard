@@ -23,9 +23,14 @@ import {
 import { parseVideoClipMetadata } from "@/lib/video-clips/source";
 import {
   replaceClip,
+  replaceOverlays,
   retimeBoundary,
+  setItemFraming,
   updateTransition,
   validateWorkingTimeline,
+  type ItemFraming,
+  type OverlayKind,
+  type TimelineOverlay,
   type WorkingTimelineSnapshot
 } from "./timeline";
 
@@ -123,9 +128,33 @@ async function latestWorkingVersion(tx:Tx,projectId:string){
   return {timeline,version};
 }
 
+function overlayFromItem(item:{
+  timelineStartMs:number;
+  timelineEndMs:number;
+  parameters:Prisma.JsonValue|null;
+}):TimelineOverlay{
+  const parameters=item.parameters as Record<string,unknown>|null;
+  if(
+    !parameters||
+    (parameters.kind!=="title"&&parameters.kind!=="caption")||
+    typeof parameters.text!=="string"||
+    (parameters.placement!=="top"&&parameters.placement!=="center"&&parameters.placement!=="bottom")
+  ){
+    throw new RefinementError("Refinement title track contains an invalid overlay.");
+  }
+  return {
+    kind:parameters.kind,
+    text:parameters.text,
+    startMs:item.timelineStartMs,
+    endMs:item.timelineEndMs,
+    placement:parameters.placement
+  };
+}
+
 function snapshotFromVersion(input:{
   items:Array<{
     id:string;
+    trackKind:TimelineTrackKind;
     position:number;
     shotVersionId:string|null;
     assetVersionId:string|null;
@@ -148,10 +177,15 @@ function snapshotFromVersion(input:{
     parameters:Prisma.JsonValue|null;
   }>;
 }):WorkingTimelineSnapshot{
+  const videoItems=input.items.filter(item=>item.trackKind===TimelineTrackKind.VIDEO);
+  const overlays=input.items
+    .filter(item=>item.trackKind===TimelineTrackKind.TITLE)
+    .map(overlayFromItem)
+    .sort((a,b)=>a.startMs-b.startMs||(a.kind===b.kind?0:a.kind==="title"?-1:1));
   const idToPosition=new Map(
-    input.items.map(item=>[item.id,item.position])
+    videoItems.map(item=>[item.id,item.position])
   );
-  const items=input.items.map(item=>{
+  const items=videoItems.map(item=>{
     if(!item.shotVersionId||!item.assetVersionId||!item.assetVersion){
       throw new RefinementError(
         "Refinement source contains an incomplete video timeline item."
@@ -192,7 +226,8 @@ function snapshotFromVersion(input:{
       parameters:transition.parameters
     };
   }).sort((a,b)=>a.fromPosition-b.fromPosition);
-  const snapshot={items,transitions};
+  const snapshot:WorkingTimelineSnapshot={items,transitions};
+  if(overlays.length) snapshot.overlays=overlays;
   validateWorkingTimeline(snapshot);
   return snapshot;
 }
@@ -211,7 +246,9 @@ function fingerprint(snapshot:WorkingTimelineSnapshot){
         manualOverride:item.manualOverride,
         parameters:item.parameters
       })),
-      transitions:snapshot.transitions
+      transitions:snapshot.transitions,
+      // Only present when titles/captions exist so existing fingerprints are unchanged.
+      ...(snapshot.overlays?.length?{overlays:snapshot.overlays}:{})
     }) as unknown as Prisma.JsonValue
   );
 }
@@ -325,6 +362,25 @@ async function persistWorkingVersion(tx:Tx,input:{
         kind:transition.kind,
         durationMs:transition.durationMs,
         parameters:toJson(transition.parameters??{})
+      }
+    });
+  }
+
+  const overlayPositions={title:0,caption:0};
+  for(const overlay of input.snapshot.overlays??[]){
+    await tx.timelineItem.create({
+      data:{
+        timelineVersionId:version.id,
+        trackKind:TimelineTrackKind.TITLE,
+        trackIndex:overlay.kind==="title"?0:1,
+        position:overlayPositions[overlay.kind]++,
+        origin:TimelineItemOrigin.MANUAL,
+        timelineStartMs:overlay.startMs,
+        timelineEndMs:overlay.endMs,
+        sourceStartMs:0,
+        sourceEndMs:null,
+        manualOverride:true,
+        parameters:toJson({kind:overlay.kind,text:overlay.text,placement:overlay.placement})
       }
     });
   }
@@ -763,6 +819,82 @@ export async function updateRefinementTransition(input:{
   },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});
 }
 
+async function applyWorkingEdit(input:{
+  userId:string;
+  projectId:string;
+  expectedWizardRevision:number;
+  expectedTimelineVersionId:string;
+},edit:(snapshot:WorkingTimelineSnapshot)=>WorkingTimelineSnapshot,reason:string){
+  const projectVersion=await ensureWizardProgress(input);
+  return db.$transaction(async tx=>{
+    await mutationContext(tx,{
+      ...input,
+      projectVersionId:projectVersion.id
+    });
+    const source=await lockedFirstCut(tx,input.projectId);
+    if(!source) throw new RefinementError("Locked First Cut not found.");
+    const current=await requireCurrentWorking(tx,input);
+    let snapshot=snapshotFromVersion(current.version);
+    try{
+      snapshot=edit(snapshot);
+    }catch(error){
+      throw new RefinementError(
+        error instanceof Error?error.message:"Finishing refinement failed."
+      );
+    }
+    const version=await persistWorkingVersion(tx,{
+      projectId:input.projectId,
+      projectVersionId:projectVersion.id,
+      userId:input.userId,
+      sourceFirstCut:source,
+      parentVersion:{
+        id:current.version.id,
+        nodeId:current.version.nodeId,
+        timelineId:current.timeline.id,
+        versionNumber:current.version.versionNumber
+      },
+      snapshot,
+      reason
+    });
+    return {
+      timelineVersionId:version.id,
+      versionNumber:version.versionNumber
+    };
+  },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});
+}
+
+/** Crop/reframe one shot ("fit" letterbox or "fill" with zoom and focus). */
+export async function updateRefinementFraming(input:{
+  userId:string;
+  projectId:string;
+  expectedWizardRevision:number;
+  expectedTimelineVersionId:string;
+  position:number;
+  framing:ItemFraming|null;
+}){
+  return applyWorkingEdit(
+    input,
+    snapshot=>setItemFraming(snapshot,input.position,input.framing),
+    "Finishing: "+(input.framing?"reframed":"reset framing of")+" shot "+String(input.position+1)+"."
+  );
+}
+
+/** Replace all titles or all captions on the working timeline. */
+export async function updateRefinementOverlays(input:{
+  userId:string;
+  projectId:string;
+  expectedWizardRevision:number;
+  expectedTimelineVersionId:string;
+  kind:OverlayKind;
+  overlays:Omit<TimelineOverlay,"kind">[];
+}){
+  return applyWorkingEdit(
+    input,
+    snapshot=>replaceOverlays(snapshot,input.kind,input.overlays),
+    "Finishing: updated "+String(input.overlays.length)+" "+input.kind+(input.overlays.length===1?"":"s")+"."
+  );
+}
+
 export async function completeRefinement(input:{
   userId:string;
   projectId:string;
@@ -913,7 +1045,7 @@ export async function getRefinementState(input:{
   const storage=createAssetStorage();
   const version=snapshot.version;
   const items=version
-    ?await Promise.all(version.items.map(async item=>{
+    ?await Promise.all(version.items.filter(item=>item.trackKind===TimelineTrackKind.VIDEO).map(async item=>{
       const metadata=item.assetVersion
         ?parseVideoClipMetadata(item.assetVersion.metadata)
         :null;
@@ -989,6 +1121,10 @@ export async function getRefinementState(input:{
         createdAt:version.createdAt,
         lockedAt:version.lockedAt,
         items,
+        overlays:version.items
+          .filter(item=>item.trackKind===TimelineTrackKind.TITLE)
+          .map(overlayFromItem)
+          .sort((a,b)=>a.startMs-b.startMs),
         transitions:version.transitions.map(transition=>({
           id:transition.id,
           fromItemId:transition.fromItemId,

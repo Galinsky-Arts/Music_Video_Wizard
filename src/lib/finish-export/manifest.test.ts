@@ -93,3 +93,25 @@ describe("Finish & Export render manifest",()=>{
     expect(()=>compileRenderManifest(value)).toThrow(/even integers/);
   });
 });
+
+describe("render manifest finishing",()=>{
+  const base={
+    projectVersionId:"p",sourceTimelineVersionId:"t",sourceTimelineNodeId:"tn",audioMasterAssetVersionId:"a",audioMasterNodeId:"an",
+    audioContentType:"audio/wav",audioDurationMs:2000,width:160,height:90,frameRate:24,aspectRatio:"16:9",transitions:[],
+    items:[0,1].map(position=>({position,shotVersionId:"s"+position,clipAssetVersionId:"c"+position,clipNodeId:"n"+position,
+      contentType:"video/mp4",timelineStartMs:position*1000,timelineEndMs:(position+1)*1000,sourceStartMs:0,sourceEndMs:1000,clipDurationMs:1000}))
+  };
+  it("omits finishing fields when unused so existing manifests keep their fingerprint",()=>{
+    const manifest=compileRenderManifest(base);
+    expect("overlays" in manifest).toBe(false);
+    expect(manifest.items.some(item=>"framing" in item)).toBe(false);
+  });
+  it("carries framing and sorted overlays, rejecting overlays outside the timeline",()=>{
+    const manifest=compileRenderManifest({...base,
+      items:base.items.map(item=>item.position===1?{...item,framing:{mode:"fill" as const,zoom:2,focusX:0.5,focusY:0.5}}:item),
+      overlays:[{kind:"caption",text:"b",startMs:900,endMs:1500,placement:"bottom"},{kind:"title",text:"a",startMs:0,endMs:800,placement:"top"}]});
+    expect(manifest.items[1]!.framing).toEqual({mode:"fill",zoom:2,focusX:0.5,focusY:0.5});
+    expect(manifest.overlays!.map(item=>item.text)).toEqual(["a","b"]);
+    expect(()=>compileRenderManifest({...base,overlays:[{kind:"title",text:"x",startMs:0,endMs:2500,placement:"top"}]})).toThrow(/inside the timeline/);
+  });
+});

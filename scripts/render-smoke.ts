@@ -6,6 +6,8 @@ import { runMediaProcess } from "../src/lib/media/process";
 import { buildFfmpegRenderCommand } from "../src/lib/finish-export/ffmpeg";
 import { compileRenderManifest } from "../src/lib/finish-export/manifest";
 import { verifyRenderedMaster } from "../src/lib/finish-export/verification";
+import { resolveOverlayFont } from "../src/lib/finish-export/fonts";
+import { execFileSync } from "node:child_process";
 
 async function main() {
   const directory = await mkdtemp(join(tmpdir(), "mvw-render-smoke-"));
@@ -44,6 +46,39 @@ async function main() {
           manifest: { ...manifest, durationMs: 5000, expectedFrameCount: Math.round(5 * frameRate) }, signal }), /frame count|duration/);
         console.log(`render: ${frameRate} fps, transitions ${durations.join("/")}: verified`);
       }
+    }
+    // Finishing controls: crop/reframe (fill + zoom + focus), a title and a caption.
+    {
+      const fontFile = resolveOverlayFont();
+      const drawtext = /\bdrawtext\b/.test(execFileSync(ffmpeg, ["-hide_banner", "-filters"], { encoding: "utf8" }));
+      const withText = Boolean(fontFile && drawtext);
+      const overlays = withText ? [
+        { kind: "title" as const, text: "Title: it's 100% \\ [ok]", startMs: 0, endMs: 1500, placement: "center" as const },
+        { kind: "caption" as const, text: "a caption, with; punctuation", startMs: 1500, endMs: 2900, placement: "bottom" as const }
+      ] : [];
+      const manifest = compileRenderManifest({
+        projectVersionId: "finishing", sourceTimelineVersionId: "timeline", sourceTimelineNodeId: "timeline-node",
+        audioMasterAssetVersionId: "audio", audioMasterNodeId: "audio-node", audioContentType: "audio/wav", audioDurationMs: 3000,
+        width: 160, height: 90, frameRate: 24, aspectRatio: "16:9",
+        items: [0, 1, 2].map(position => ({ position, shotVersionId: "shot-" + position,
+          clipAssetVersionId: "clip-" + position, clipNodeId: "clip-node-" + position, contentType: "video/mp4",
+          timelineStartMs: position * 1000, timelineEndMs: (position + 1) * 1000,
+          sourceStartMs: 200, sourceEndMs: 1200, clipDurationMs: 2000,
+          framing: position === 1 ? { mode: "fill" as const, zoom: 1.5, focusX: 0.2, focusY: 0.8 } : null })),
+        transitions: [{ fromPosition: 0, toPosition: 1, kind: "DISSOLVE", durationMs: 400, parameters: {} }],
+        overlays
+      });
+      const overlayTextPaths: string[] = [];
+      for (const [index, overlay] of overlays.entries()) {
+        const path = join(directory, `overlay-${index}.txt`);
+        await writeFile(path, overlay.text, "utf8");
+        overlayTextPaths.push(path);
+      }
+      const outputPath = join(directory, "finished.mp4");
+      await runMediaProcess({ ...buildFfmpegRenderCommand({ executable: ffmpeg, manifest, clipPaths, audioPath, outputPath,
+        overlayTextPaths, fontFile }), signal, description: "Finishing render" });
+      await verifyRenderedMaster({ ffmpeg, ffprobe, path: outputPath, manifest, signal });
+      console.log(`render: crop/reframe${withText ? " + title + caption" : " (drawtext/font unavailable: overlays skipped)"}: verified`);
     }
     // Verify a full-length soundtrack at fractional frame rate, including the end.
     const longClip = join(directory, "long.mp4");

@@ -1,3 +1,5 @@
+import type { ItemFraming, TimelineOverlay } from "@/lib/refinement/timeline";
+
 export interface RenderSourceItem{
   position:number;
   shotVersionId:string;
@@ -9,6 +11,8 @@ export interface RenderSourceItem{
   sourceStartMs:number;
   sourceEndMs:number;
   clipDurationMs:number|null;
+  /** Non-default crop/reframe; omitted = fit (letterbox). */
+  framing?:ItemFraming|null;
 }
 
 export interface RenderSourceTransition{
@@ -33,6 +37,8 @@ export interface CompileRenderManifestInput{
   aspectRatio:string;
   items:RenderSourceItem[];
   transitions:RenderSourceTransition[];
+  /** Burned-in titles and captions. */
+  overlays?:readonly TimelineOverlay[];
 }
 
 export interface RenderManifest{
@@ -63,8 +69,11 @@ export interface RenderManifest{
     timelineEndMs:number;
     sourceStartMs:number;
     sourceEndMs:number;
+    framing?:ItemFraming;
   }>;
   transitions:RenderSourceTransition[];
+  /** Present only when titles/captions exist, so older manifests keep their fingerprint. */
+  overlays?:TimelineOverlay[];
 }
 
 export function compileRenderManifest(
@@ -191,6 +200,13 @@ export function compileRenderManifest(
     }
   }
 
+  const overlays=[...(input.overlays??[])].sort((a,b)=>a.startMs-b.startMs);
+  for(const overlay of overlays){
+    if(overlay.startMs<0||overlay.endMs<=overlay.startMs||overlay.endMs>durationMs||!overlay.text.trim()){
+      throw new Error("Render overlays must contain text and fall inside the timeline.");
+    }
+  }
+
   return {
     schemaVersion:1,
     projectVersionId:input.projectVersionId,
@@ -220,8 +236,10 @@ export function compileRenderManifest(
       timelineStartMs:item.timelineStartMs,
       timelineEndMs:item.timelineEndMs,
       sourceStartMs:item.sourceStartMs,
-      sourceEndMs:item.sourceEndMs
+      sourceEndMs:item.sourceEndMs,
+      ...(item.framing?{framing:{...item.framing}}:{})
     })),
-    transitions
+    transitions,
+    ...(overlays.length?{overlays:overlays.map(item=>({...item}))}:{})
   };
 }

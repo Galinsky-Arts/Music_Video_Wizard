@@ -6,9 +6,11 @@ import {
   GenerationStatus,
   Prisma,
   TimelineKind,
+  TimelineTrackKind,
   VersionLifecycle,
   WizardStepStatus
 } from "@prisma/client";
+import { parseItemFraming, type TimelineOverlay } from "@/lib/refinement/timeline";
 import { db } from "@/lib/db";
 import { fingerprintJson } from "@/lib/dependency-graph/fingerprint";
 import { enqueueGenerationJob } from "@/lib/jobs/service";
@@ -161,8 +163,29 @@ async function compileCurrentManifest(
     );
   }
 
+  const videoItems=source.items.filter(item=>item.trackKind===TimelineTrackKind.VIDEO);
+  const overlays=source.items
+    .filter(item=>item.trackKind===TimelineTrackKind.TITLE)
+    .map(item=>{
+      const parameters=item.parameters as Record<string,unknown>|null;
+      if(
+        !parameters||
+        (parameters.kind!=="title"&&parameters.kind!=="caption")||
+        typeof parameters.text!=="string"||
+        (parameters.placement!=="top"&&parameters.placement!=="center"&&parameters.placement!=="bottom")
+      ){
+        throw new FinishExportError("Refinement title track contains an invalid overlay.");
+      }
+      return {
+        kind:parameters.kind,
+        text:parameters.text,
+        startMs:item.timelineStartMs,
+        endMs:item.timelineEndMs,
+        placement:parameters.placement
+      } satisfies TimelineOverlay;
+    });
   const idToPosition=new Map(
-    source.items.map(item=>[item.id,item.position])
+    videoItems.map(item=>[item.id,item.position])
   );
   const transitions:RenderSourceTransition[]=source.transitions.map(
     transition=>{
@@ -196,7 +219,8 @@ async function compileCurrentManifest(
       height:projectVersion.outputHeight,
       frameRate:projectVersion.frameRate,
       aspectRatio:projectVersion.aspectRatio,
-      items:source.items.map(item=>{
+      overlays,
+      items:videoItems.map(item=>{
         if(
           !item.shotVersionId||
           !item.assetVersionId||
@@ -221,7 +245,8 @@ async function compileCurrentManifest(
           timelineEndMs:item.timelineEndMs,
           sourceStartMs:item.sourceStartMs,
           sourceEndMs:item.sourceEndMs,
-          clipDurationMs:item.assetVersion.durationMs
+          clipDurationMs:item.assetVersion.durationMs,
+          framing:parseItemFraming(item.parameters)
         };
       }),
       transitions

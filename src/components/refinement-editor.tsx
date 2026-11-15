@@ -2,6 +2,7 @@
 
 import { useEffect,useMemo,useState } from "react";
 import { useRouter } from "next/navigation";
+import { FinishingPanel, type FinishingOverlay } from "./finishing-panel";
 
 type Alternative={
   assetVersionId:string;
@@ -45,6 +46,7 @@ type RefinementVersion={
   lockedAt:string|null;
   items:RefinementItem[];
   transitions:RefinementTransition[];
+  overlays?:FinishingOverlay[];
 };
 
 type HistoryItem={
@@ -130,6 +132,11 @@ export function RefinementEditor(props:RefinementState&{
   const itemPositionById=useMemo(
     ()=>new Map(items.map(item=>[item.id,item.position])),
     [items]
+  );
+
+  const overlays=useMemo(
+    ()=>state.version?.overlays??[],
+    [state.version?.overlays]
   );
 
   const transitionsByPosition=useMemo(()=>{
@@ -525,6 +532,20 @@ export function RefinementEditor(props:RefinementState&{
           );
         })}
       </section>
+
+      {state.version?(
+        <FinishingPanel
+          items={items}
+          overlays={overlays}
+          durationMs={items.at(-1)?.timelineEndMs??0}
+          disabled={busy||state.wizardLocked}
+          onMutate={(body,success)=>mutate({
+            ...body,
+            expectedWizardRevision:state.wizardRevision,
+            expectedTimelineVersionId:state.version!.id
+          },success)}
+        />
+      ):null}
 
       <section className="refinementHistory">
         <div>
