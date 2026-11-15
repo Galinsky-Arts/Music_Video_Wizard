@@ -4,7 +4,7 @@ export interface WizardStepDefinition {
   phase: string;
   title: string;
   description: string;
-  editor: "project-setup" | "music-analysis" | "music-map" | "creative-brief" | "concepts" | "treatment" | "creative-language" | "song-picture-plan" | "sequence-map" | "storyboard" | "shot-specifications" | "initial-frames" | "video-clips" | "first-cut" | "refinement" | "finish-export" | null;
+  editor: "project-setup" | "music-analysis" | "music-map" | "creative-brief" | "concepts" | "treatment" | "creative-language" | "song-picture-plan" | "sequence-map" | "storyboard" | "shot-specifications" | "initial-frames" | "animatic" | "video-clips" | "first-cut" | "refinement" | "finish-export" | null;
 }
 
 export const WIZARD_STEPS: readonly WizardStepDefinition[] = [
@@ -115,6 +115,15 @@ export const WIZARD_STEPS: readonly WizardStepDefinition[] = [
     description:
       "Create and approve the starting image for each planned generated shot.",
     editor: "initial-frames"
+  },
+  {
+    key: "animatic",
+    ordinal: 105,
+    phase: "Generate",
+    title: "Animatic",
+    description:
+      "Play approved stills against the finished song with the First Cut's exact timing and transitions before spending on video generation.",
+    editor: "animatic"
   },
   {
     key: "video-clips",
