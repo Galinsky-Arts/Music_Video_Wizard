@@ -51,6 +51,9 @@ export default async function AppHomePage() {
           <Link className="secondaryButton linkButton" href="/app/kits">
             Creative Kits
           </Link>
+          <Link className="secondaryButton linkButton" href="/app/usage">
+            Usage &amp; quotas
+          </Link>
           <Link className="primaryButton linkButton" href="/app/projects/new">
             New project
           </Link>
