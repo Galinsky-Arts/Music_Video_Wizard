@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ensurePersonalWorkspace } from "@/lib/workspaces";
 import { SignOutButton } from "@/components/sign-out-button";
+import { ProjectPackageRestore } from "@/components/project-package-restore";
 
 export default async function AppHomePage() {
   const session = await auth.api.getSession({
@@ -61,6 +62,8 @@ export default async function AppHomePage() {
         <p className="dashboardLabel">Workspace</p>
         <p className="dashboardValue">{workspace.name}</p>
       </section>
+
+      <ProjectPackageRestore />
 
       <section className="projectSection">
         <div className="sectionHeading">

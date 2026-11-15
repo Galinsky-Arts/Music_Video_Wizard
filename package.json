@@ -47,6 +47,7 @@
     "start:production": "prisma migrate deploy && next start -H 0.0.0.0 -p ${PORT:-10000}",
     "ops:production-gate": "tsx scripts/ops-production-gate.ts",
     "test:render": "tsx scripts/render-smoke.ts",
+    "test:package": "tsx scripts/project-package-smoke.ts",
     "predev": "node scripts/build-browser-gpu.mjs",
     "prebuild": "node scripts/build-browser-gpu.mjs"
   },
