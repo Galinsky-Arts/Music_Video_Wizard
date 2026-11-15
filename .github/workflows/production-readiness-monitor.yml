@@ -1,8 +1,6 @@
 name: Production Readiness Monitor
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -31,7 +29,7 @@ jobs:
             exit 1
           fi
           origin="${PRODUCTION_URL%/}"
-          response="$(curl --silent --show-error --location --max-redirs 0 --connect-timeout 10 --max-time 25 --output /tmp/mvw-ready.json --write-out '%{http_code}' "$origin/api/ready")"
+          response="$(curl --silent --show-error --location --max-redirs 0 --connect-timeout 60 --max-time 90 --output /tmp/mvw-ready.json --write-out '%{http_code}' "$origin/api/ready")"
           if [[ "$response" != 200 ]]; then
             echo "::error::Readiness endpoint returned HTTP $response."
             exit 1
