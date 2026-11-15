@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect,useMemo,useState } from "react";
+import { useLatest } from "./use-latest";
 import { useRouter } from "next/navigation";
 import { ShotMediaImport } from "./shot-media-import";
 
@@ -81,13 +82,14 @@ export function InitialFramesEditor(props:StateView&{projectId:string}){
     setState(next);
   }
 
+  const refreshRef=useLatest(refresh);
   useEffect(()=>{
     if(!activeJobs.length) return;
     const timer=window.setInterval(async()=>{
-      await refresh();
+      await refreshRef.current();
     },2000);
     return ()=>window.clearInterval(timer);
-  },[activeJobs.length]);
+  },[activeJobs.length, refreshRef]);
 
   async function generate(ids:string[]){
     setBusy(true);
@@ -252,6 +254,9 @@ export function InitialFramesEditor(props:StateView&{projectId:string}){
           <article className="initialFrameCard" key={frame.sourceStoryboardShotVersionId}>
             <div className="initialFrameVisual">
               {frame.url?(
+                // Signed, short-lived private storage URL: the Next image optimizer
+                // would proxy and cache private media, so a plain <img> is intended.
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={frame.url}
                   alt={frame.label??"Generated Initial Frame"}

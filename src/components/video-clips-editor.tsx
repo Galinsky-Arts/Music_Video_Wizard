@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect,useMemo,useState } from "react";
+import { useLatest } from "./use-latest";
 import { useRouter } from "next/navigation";
 import { ShotMediaImport } from "./shot-media-import";
 
@@ -82,13 +83,14 @@ export function VideoClipsEditor(props:StateView&{projectId:string}){
     setState(next);
   }
 
+  const refreshRef=useLatest(refresh);
   useEffect(()=>{
     if(!activeJobs.length) return;
     const timer=window.setInterval(async()=>{
-      await refresh();
+      await refreshRef.current();
     },3000);
     return ()=>window.clearInterval(timer);
-  },[activeJobs.length]);
+  },[activeJobs.length, refreshRef]);
 
   async function generate(ids:string[]){
     setBusy(true);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLatest } from "./use-latest";
 import { useRouter } from "next/navigation";
 
 type Passage={
@@ -151,6 +152,7 @@ export function SongPicturePlanEditor(props:{
     setJob(state.recentJob);
   }
 
+  const refreshStateRef=useLatest(refreshState);
   useEffect(()=>{
     if(!active||!job)return;
     const timer=window.setInterval(async()=>{
@@ -160,13 +162,13 @@ export function SongPicturePlanEditor(props:{
       setJob(next);
       if(["SUCCEEDED","FAILED","CANCELLED"].includes(next.status)){
         window.clearInterval(timer);
-        await refreshState();
+        await refreshStateRef.current();
         setMessage(next.status==="SUCCEEDED"?"Song-to-Picture Plan generated. Review and refine it before completion.":next.errorMessage??"Song-to-Picture generation did not complete.");
         router.refresh();
       }
     },2000);
     return()=>window.clearInterval(timer);
-  },[active,job,router]);
+  },[active,job,router, refreshStateRef]);
 
   async function initialize(){
     setBusy(true);setMessage(null);

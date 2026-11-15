@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLatest } from "./use-latest";
 import { useRouter } from "next/navigation";
 
 type Section = {
@@ -139,6 +140,7 @@ export function TreatmentEditor(props: {
     setJob(state.recentJob);
   }
 
+  const refreshStateRef=useLatest(refreshState);
   useEffect(() => {
     if (!active || !job) return;
     const timer = window.setInterval(async () => {
@@ -148,7 +150,7 @@ export function TreatmentEditor(props: {
       setJob(next);
       if (["SUCCEEDED", "FAILED", "CANCELLED"].includes(next.status)) {
         window.clearInterval(timer);
-        await refreshState();
+        await refreshStateRef.current();
         if (next.status === "SUCCEEDED") {
           setStatus("IN_PROGRESS");
           setMessage("Treatment generation completed. Review and edit it before completion.");
@@ -159,7 +161,7 @@ export function TreatmentEditor(props: {
       }
     }, 2000);
     return () => window.clearInterval(timer);
-  }, [active, job, router]);
+  }, [active, job, router, refreshStateRef]);
 
   async function initialize() {
     setBusy(true);

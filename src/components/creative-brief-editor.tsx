@@ -2,6 +2,7 @@
 
 import type { Route } from "next";
 import { useEffect, useRef, useState } from "react";
+import { useLatest } from "./use-latest";
 import { useRouter } from "next/navigation";
 import type { CreativeBriefDraft } from "@/lib/creative-brief/input";
 
@@ -269,6 +270,7 @@ export function CreativeBriefEditor(props: {
     }
   }
 
+  const saveDraftRef = useLatest(saveDraft);
   useEffect(() => {
     if (!brief) return;
     const json = JSON.stringify(brief);
@@ -279,11 +281,11 @@ export function CreativeBriefEditor(props: {
       current === "saving" ? current : "unsaved"
     );
     const timer = window.setTimeout(() => {
-      void saveDraft(brief, json);
+      void saveDraftRef.current(brief, json);
     }, 700);
 
     return () => window.clearTimeout(timer);
-  }, [brief, editable]);
+  }, [brief, editable, saveDraftRef]);
 
   async function transition(action: "complete" | "reopen" | "lock") {
     if (!version) return;
