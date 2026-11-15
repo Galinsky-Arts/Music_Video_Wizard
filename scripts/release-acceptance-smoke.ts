@@ -41,6 +41,7 @@ const expectedSteps=[
   "storyboard",
   "shot-specifications",
   "initial-frames",
+  "animatic",
   "video-clips",
   "first-cut",
   "refinement",
