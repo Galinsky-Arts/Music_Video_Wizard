@@ -59,7 +59,7 @@ export const packageAssetSchema = z.object({
   assetId: uuid,
   kind: z.enum([
     "AUDIO_MASTER", "REFERENCE_IMAGE", "STORYBOARD_IMAGE", "GENERATED_IMAGE",
-    "GENERATED_VIDEO", "GRAPHIC", "TITLE_CARD", "RENDER_PREVIEW", "RENDER_MASTER", "OTHER"
+    "GENERATED_VIDEO", "GRAPHIC", "TITLE_CARD", "RENDER_PREVIEW", "RENDER_MASTER", "DELIVERY_VARIANT", "OTHER"
   ]),
   name: z.string().max(500).nullable(),
   versions: z.array(packageAssetVersionSchema).max(MAX_PACKAGE_ENTRIES)

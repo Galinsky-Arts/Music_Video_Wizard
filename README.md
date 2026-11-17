@@ -71,10 +71,20 @@ Creators can also [import their own frames and clips](docs/media-imports.md) wit
   shots and cuts, approval requests with optimistic-concurrency conflict
   handling, and access expiry. See [collaboration](docs/collaboration.md).
   Invites are copied links; no email is sent.
-- Not built: plan PR 25 (performance/lip-sync/choreography branches) and PR 26
-  (alternate compositions and external-editor interchange). Both require
-  supported providers or a demonstrated import into a real editor before they
-  may be advertised.
+- PR 26 (no-provider parts) is implemented: alternate-format renders of the
+  locked edit (vertical 9:16, square 1:1, portrait 4:5, 1080p high quality,
+  720p web) using each shot's crop/reframe focus or letterbox, through the same
+  verified FFmpeg queue (one render at a time for the 512 MB limit); and
+  editing interchange export (FCPXML 1.9, CMX3600 EDL, media manifest with
+  24-hour download links). Files are validated structurally in tests and the
+  browser E2E; an actual import into Final Cut/Resolve/Premiere has not been
+  demonstrated yet, so transitions export as cuts with notes. See
+  [delivery](docs/delivery-and-performance.md).
+- PR 25: free local beat-synced cut and dance 8-count markers from Music
+  Analysis (on screen and CSV). Lip-sync/choreography generation has a
+  provider-neutral adapter that is OFF until `PERFORMANCE_SYNC_PROVIDER`,
+  `PERFORMANCE_SYNC_API_BASE` and `PERFORMANCE_SYNC_API_KEY` are set; no
+  provider is integrated or validated.
 - Live AI generation needs provider keys (see
   [generation provider strategy](docs/generation-provider-strategy.md)); without
   them, creators import their own frames and clips.

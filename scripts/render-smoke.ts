@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { runMediaProcess } from "../src/lib/media/process";
 import { buildFfmpegRenderCommand } from "../src/lib/finish-export/ffmpeg";
 import { compileRenderManifest } from "../src/lib/finish-export/manifest";
+import { deriveVariantManifest } from "../src/lib/delivery/presets";
 import { verifyRenderedMaster } from "../src/lib/finish-export/verification";
 import { resolveOverlayFont } from "../src/lib/finish-export/fonts";
 import { execFileSync } from "node:child_process";
@@ -79,6 +80,18 @@ async function main() {
         overlayTextPaths, fontFile }), signal, description: "Finishing render" });
       await verifyRenderedMaster({ ffmpeg, ffprobe, path: outputPath, manifest, signal });
       console.log(`render: crop/reframe${withText ? " + title + caption" : " (drawtext/font unavailable: overlays skipped)"}: verified`);
+      // Delivery variants: vertical 9:16 reframe and square letterbox from the same edit (scaled down for CI).
+      for (const [presetKey, framingMode] of [["vertical-1080", "fill"], ["square-1080", "fit"]] as const) {
+        const derived = deriveVariantManifest(manifest, { presetKey, framingMode });
+        const small = { ...derived, output: { ...derived.output, width: derived.output.width / 10 + (derived.output.width / 10) % 2, height: derived.output.height / 10 + (derived.output.height / 10) % 2 } };
+        const variantPath = join(directory, `variant-${presetKey}.mp4`);
+        await runMediaProcess({ ...buildFfmpegRenderCommand({ executable: ffmpeg, manifest: small, clipPaths, audioPath, outputPath: variantPath,
+          overlayTextPaths, fontFile }), signal, description: "Variant render" });
+        const verifiedVariant = await verifyRenderedMaster({ ffmpeg, ffprobe, path: variantPath, manifest: small, signal });
+        assert.equal(verifiedVariant.width, small.output.width);
+        assert.equal(verifiedVariant.height, small.output.height);
+        console.log(`render: delivery variant ${presetKey} (${framingMode}) ${small.output.width}x${small.output.height}: verified`);
+      }
     }
     // Verify a full-length soundtrack at fractional frame rate, including the end.
     const longClip = join(directory, "long.mp4");
@@ -107,7 +120,7 @@ async function main() {
     command.abort(new Error("Cancelled render"));
     await assert.rejects(runMediaProcess({ executable: ffmpeg, args: ["-version"], signal: command.signal, description: "Cancelled render" }), /Cancelled render/);
     await assert.rejects(runMediaProcess({ executable: ffmpeg, args: ["-v", "error", "-xerror", "-i", broken, "-f", "null", "-"], signal, description: "Corrupt render" }), /failed/);
-    console.log("Real FFmpeg render acceptance passed (13 delivery cases, corrupt media and cancellation).");
+    console.log("Real FFmpeg render acceptance passed (15 delivery cases, corrupt media and cancellation).");
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

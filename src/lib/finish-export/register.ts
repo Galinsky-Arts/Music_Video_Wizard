@@ -1,6 +1,6 @@
 import { GenerationKind } from "@prisma/client";
 import { generationHandlers } from "@/lib/jobs/registry";
-import { handleFinalMasterRender } from "./handler";
+import { handleDeliveryVariantRender, handleFinalMasterRender } from "./handler";
 
 let registered=false;
 
@@ -10,6 +10,11 @@ export function registerFinalMasterRenderHandler(){
     GenerationKind.RENDER,
     "ffmpeg:finish-export",
     handleFinalMasterRender
+  );
+  generationHandlers.register(
+    GenerationKind.RENDER,
+    "ffmpeg:delivery-variant",
+    handleDeliveryVariantRender
   );
   registered=true;
 }

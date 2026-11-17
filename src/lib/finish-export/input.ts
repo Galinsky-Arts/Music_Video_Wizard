@@ -30,7 +30,9 @@ export const renderManifestSchema=z.object({
     container:z.literal("mp4"),
     videoCodec:z.literal("h264"),
     audioCodec:z.literal("aac"),
-    pixelFormat:z.literal("yuv420p")
+    pixelFormat:z.literal("yuv420p"),
+    /** Delivery variants only; masters omit it (CRF 18). */
+    crf:z.number().int().min(14).max(30).optional()
   }).strict(),
   durationMs:z.number().int().positive(),
   expectedFrameCount:z.number().int().positive(),
@@ -71,7 +73,13 @@ export const queuedMasterRenderSchema=z.object({
   projectId:uuid,
   renderAssetId:uuid,
   manifest:renderManifestSchema,
-  manifestFingerprint:z.string().min(1)
+  manifestFingerprint:z.string().min(1),
+  /** Present for alternate-format delivery renders (not the master). */
+  variant:z.object({
+    presetKey:z.string().min(1).max(60),
+    label:z.string().min(1).max(120),
+    framingMode:z.enum(["fill","fit"])
+  }).strict().optional()
 }).strict();
 
 export type QueuedMasterRender=z.infer<typeof queuedMasterRenderSchema>;

@@ -679,3 +679,19 @@ export async function getFinishExportState(input:{
     wizardLocked:snapshot.wizardLocked
   };
 }
+
+/** The current locked-timeline render manifest (read-only; used by delivery variants and interchange export). */
+export async function getCurrentRenderManifest(input:{userId:string;projectId:string}){
+  const projectVersion=await ensureWizardProgress(input);
+  return db.$transaction(async tx=>{
+    const progress=await tx.wizardProgress.findUniqueOrThrow({
+      where:{projectVersionId:projectVersion.id},
+      include:{steps:true}
+    });
+    if(!progress.steps.find(step=>step.stepKey==="refinement")?.lockedAt){
+      throw new FinishExportError("Lock the Refinement timeline before exporting delivery formats or interchange files.");
+    }
+    const manifest=await compileCurrentManifest(tx,{projectId:input.projectId,projectVersionId:projectVersion.id});
+    return {manifest,manifestFingerprint:manifestFingerprint(manifest),projectVersionId:projectVersion.id};
+  });
+}
