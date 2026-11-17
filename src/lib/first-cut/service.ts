@@ -29,6 +29,7 @@ import {
   type FirstCutPlan,
   type FirstCutSource
 } from "./compiler";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class FirstCutError extends Error{}
 export class FirstCutConflictError extends FirstCutError{}
@@ -50,7 +51,7 @@ async function mutationContext(tx:Tx,input:{
       projectVersionId:input.projectVersionId,
       projectVersion:{
         projectId:input.projectId,
-        project:{workspace:{memberships:{some:{userId:input.userId}}}}
+        project:{...projectEditorWhere(input.userId)}
       }
     },
     include:{projectVersion:true,steps:true}

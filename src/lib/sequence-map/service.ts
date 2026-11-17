@@ -22,6 +22,7 @@ import {
   sequenceSpecFromPassage,
   type SequenceMapEdit
 } from "./schema";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class SequenceMapError extends Error {}
 export class SequenceMapConflictError extends SequenceMapError {}
@@ -197,7 +198,7 @@ async function mutationContext(tx:Tx,input:{
       projectVersionId:input.projectVersionId,
       projectVersion:{
         projectId:input.projectId,
-        project:{workspace:{memberships:{some:{userId:input.userId}}}}
+        project:{...projectEditorWhere(input.userId)}
       }
     },
     include:{projectVersion:true,steps:true}
@@ -529,7 +530,7 @@ export async function getSequenceMapState(input:{
   const project=await db.project.findFirst({
     where:{
       id:input.projectId,
-      workspace:{memberships:{some:{userId:input.userId}}}
+      ...projectEditorWhere(input.userId)
     },
     include:{
       songPicturePlan:{

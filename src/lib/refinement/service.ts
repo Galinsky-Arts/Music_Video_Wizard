@@ -33,6 +33,7 @@ import {
   type TimelineOverlay,
   type WorkingTimelineSnapshot
 } from "./timeline";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class RefinementError extends Error{}
 export class RefinementConflictError extends RefinementError{}
@@ -54,7 +55,7 @@ async function mutationContext(tx:Tx,input:{
       projectVersionId:input.projectVersionId,
       projectVersion:{
         projectId:input.projectId,
-        project:{workspace:{memberships:{some:{userId:input.userId}}}}
+        project:{...projectEditorWhere(input.userId)}
       }
     },
     include:{projectVersion:true,steps:true}

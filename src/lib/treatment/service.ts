@@ -29,6 +29,7 @@ import {
   type TreatmentDraft
 } from "./schema";
 import { queuedTreatmentGenerationSchema } from "./input";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class TreatmentError extends Error {}
 export class TreatmentConflictError extends TreatmentError {}
@@ -187,7 +188,7 @@ async function mutationContext(tx: Tx, input: {
       treatment: {
         projectId: input.projectId,
         project: {
-          workspace: { memberships: { some: { userId: input.userId } } }
+          ...projectEditorWhere(input.userId)
         }
       }
     }
@@ -487,7 +488,7 @@ export async function getTreatmentState(input: { userId: string; projectId: stri
   const project = await db.project.findFirst({
     where: {
       id: input.projectId,
-      workspace: { memberships: { some: { userId: input.userId } } }
+      ...projectEditorWhere(input.userId)
     },
     include: {
       conceptSet: { include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } } },

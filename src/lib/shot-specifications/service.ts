@@ -32,6 +32,7 @@ import {
   type GeneratedShotSpecificationsDocument,
   type ShotSpecificationSpec
 } from "./schema";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class ShotSpecificationsError extends Error {}
 export class ShotSpecificationsConflictError extends ShotSpecificationsError {}
@@ -165,7 +166,7 @@ async function mutationContext(tx:Tx,input:{
       projectVersionId:input.projectVersionId,
       projectVersion:{
         projectId:input.projectId,
-        project:{workspace:{memberships:{some:{userId:input.userId}}}}
+        project:{...projectEditorWhere(input.userId)}
       }
     },
     include:{projectVersion:true,steps:true}

@@ -11,6 +11,7 @@ import {
   getWizardStepDefinition,
   WIZARD_STEPS
 } from "./registry";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class WizardError extends Error {}
 export class WizardConflictError extends WizardError {}
@@ -71,11 +72,7 @@ async function loadLatestProjectVersionForUser(
       projectId,
       project: {
         archivedAt: null,
-        workspace: {
-          memberships: {
-            some: { userId }
-          }
-        }
+        ...projectEditorWhere(userId)
       }
     },
     orderBy: { versionNumber: "desc" },
@@ -270,11 +267,7 @@ async function loadMutationContext(
       projectVersion: {
         projectId: input.projectId,
         project: {
-          workspace: {
-            memberships: {
-              some: { userId: input.userId }
-            }
-          }
+          ...projectEditorWhere(input.userId)
         }
       }
     },

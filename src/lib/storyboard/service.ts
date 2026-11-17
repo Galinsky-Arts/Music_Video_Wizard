@@ -35,6 +35,7 @@ import {
   storyboardShotSpecSchema,
   type StoryboardDocument
 } from "./schema";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class StoryboardError extends Error {}
 export class StoryboardConflictError extends StoryboardError {}
@@ -81,7 +82,7 @@ async function mutationContext(tx:Tx,input:{
       projectVersionId:input.projectVersionId,
       projectVersion:{
         projectId:input.projectId,
-        project:{workspace:{memberships:{some:{userId:input.userId}}}}
+        project:{...projectEditorWhere(input.userId)}
       }
     },
     include:{projectVersion:true,steps:true}

@@ -13,6 +13,7 @@ import {
   WizardLockedError
 } from "@/lib/wizard/service";
 import { compileAnimaticPlan, type AnimaticPlan, type AnimaticSource } from "./compiler";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class AnimaticError extends Error{}
 export class AnimaticConflictError extends AnimaticError{}
@@ -139,7 +140,7 @@ export async function completeAnimaticReview(input:{
         projectVersionId:projectVersion.id,
         projectVersion:{
           projectId:input.projectId,
-          project:{workspace:{memberships:{some:{userId:input.userId}}}}
+          project:{...projectEditorWhere(input.userId)}
         }
       },
       include:{projectVersion:true,steps:true}

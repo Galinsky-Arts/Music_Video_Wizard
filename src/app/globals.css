@@ -3030,3 +3030,12 @@ h1 {
 .usageTable thead th {
   font-weight: 600;
 }
+
+/* Collaboration review board */
+.visuallyHidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.linkLikeButton { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; }
+.reviewThread ol { padding-left: 1.25rem; }
+.reviewComment { margin: 0.5rem 0; }
+.reviewComment.resolved { opacity: 0.6; }
+.reviewCommentForm { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end; margin: 0.5rem 0; }
+.reviewCommentForm textarea { min-width: min(100%, 28rem); }

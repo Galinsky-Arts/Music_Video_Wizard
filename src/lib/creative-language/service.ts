@@ -31,6 +31,7 @@ import {
   EMPTY_CREATIVE_LANGUAGE,
   type CreativeLanguageDraft
 } from "./schema";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class CreativeLanguageError extends Error {}
 export class CreativeLanguageConflictError extends CreativeLanguageError {}
@@ -162,9 +163,7 @@ async function mutationContext(
       creativeLanguage: {
         projectId: input.projectId,
         project: {
-          workspace: {
-            memberships: { some: { userId: input.userId } }
-          }
+          ...projectEditorWhere(input.userId)
         }
       }
     }
@@ -692,9 +691,7 @@ export async function getCreativeLanguageState(input: {
   const project = await db.project.findFirst({
     where: {
       id: input.projectId,
-      workspace: {
-        memberships: { some: { userId: input.userId } }
-      }
+      ...projectEditorWhere(input.userId)
     },
     include: {
       treatment: {

@@ -60,3 +60,21 @@ Every pull request is expected to pass the same commands in CI.
 Run `npm run test:render` for real FFmpeg/FFprobe delivery checks and `npm run test:e2e` for browser acceptance. The browser suite requires migrated PostgreSQL, local asset storage, Chromium, FFmpeg and FFprobe. See [final export acceptance](docs/final-export-acceptance.md) for what these checks prove and the live-provider acceptance still required.
 
 Creators can also [import their own frames and clips](docs/media-imports.md) without paid generation providers. Current Galinsky Arts infrastructure is recorded in [live deployment](docs/live-deployment.md).
+
+## Release status (2026-11-17)
+
+- Development plan PRs 1–23 (the first-release path: music map through final
+  render, package export/restore, usage and operator controls) are implemented;
+  see `registry/prs.json` and `docs/`.
+- PR 24 collaboration is implemented: project sharing with editor/reviewer/
+  viewer roles, single-use expiring invite links, timecoded threaded comments on
+  shots and cuts, approval requests with optimistic-concurrency conflict
+  handling, and access expiry. See [collaboration](docs/collaboration.md).
+  Invites are copied links; no email is sent.
+- Not built: plan PR 25 (performance/lip-sync/choreography branches) and PR 26
+  (alternate compositions and external-editor interchange). Both require
+  supported providers or a demonstrated import into a real editor before they
+  may be advertised.
+- Live AI generation needs provider keys (see
+  [generation provider strategy](docs/generation-provider-strategy.md)); without
+  them, creators import their own frames and clips.

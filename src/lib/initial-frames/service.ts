@@ -26,6 +26,7 @@ import {
   initialFrameAssetsForProject,
   lockedShotSpecificationSources
 } from "./source";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class InitialFramesError extends Error{}
 export class InitialFramesConflictError extends InitialFramesError{}
@@ -60,7 +61,7 @@ async function mutationContext(tx:Prisma.TransactionClient,input:{
       projectVersionId:input.projectVersionId,
       projectVersion:{
         projectId:input.projectId,
-        project:{workspace:{memberships:{some:{userId:input.userId}}}}
+        project:{...projectEditorWhere(input.userId)}
       }
     },
     include:{projectVersion:true,steps:true}

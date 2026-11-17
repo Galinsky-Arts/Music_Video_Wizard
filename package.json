@@ -50,7 +50,8 @@
     "test:package": "tsx scripts/project-package-smoke.ts",
     "test:usage": "tsx scripts/usage-smoke.ts",
     "predev": "node scripts/build-browser-gpu.mjs",
-    "prebuild": "node scripts/build-browser-gpu.mjs"
+    "prebuild": "node scripts/build-browser-gpu.mjs",
+    "test:collaboration": "tsx scripts/collaboration-smoke.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1146.0",

@@ -42,6 +42,8 @@ import { getAutomaticFirstCutState } from "@/lib/first-cut/service";
 import { getRefinementState } from "@/lib/refinement/service";
 import { getFinishExportState } from "@/lib/finish-export/service";
 import { getWizardView } from "@/lib/wizard/service";
+import { getProjectAccess } from "@/lib/collaboration/access";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export default async function ProjectWizardPage(props: {
   params: Promise<{ projectId: string }>;
@@ -52,6 +54,9 @@ export default async function ProjectWizardPage(props: {
 
   const { projectId } = await props.params;
   const searchParams = await props.searchParams;
+  const projectAccess = await getProjectAccess(session.user.id, projectId);
+  // Reviewers and viewers work from the review board, not the editing wizard.
+  if (projectAccess && !projectAccess.canEdit) redirect(`/app/projects/${projectId}/review`);
   const view = await getWizardView({
     userId: session.user.id,
     projectId,
@@ -63,11 +68,7 @@ export default async function ProjectWizardPage(props: {
         where: {
           id: view.projectVersion.audioMasterAssetVersionId,
           asset: {
-            workspace: {
-              memberships: {
-                some: { userId: session.user.id }
-              }
-            }
+            OR: [{ workspace: { memberships: { some: { userId: session.user.id } } } }, { project: projectEditorWhere(session.user.id) }]
           }
         },
         include: { asset: true }
@@ -232,6 +233,14 @@ export default async function ProjectWizardPage(props: {
           >
             Export project package
           </a>
+          <Link className="secondaryButton linkButton" href={`/app/projects/${projectId}/review`}>
+            Review &amp; comments
+          </Link>
+          {projectAccess?.canManageCollaborators ? (
+            <Link className="secondaryButton linkButton" href={`/app/projects/${projectId}/share`}>
+              Share project
+            </Link>
+          ) : null}
         </div>
 
         <WizardNavigation
