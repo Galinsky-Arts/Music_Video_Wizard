@@ -57,6 +57,7 @@ export interface RenderManifest{
     videoCodec:"h264";
     audioCodec:"aac";
     pixelFormat:"yuv420p";
+    crf?:number;
   };
   durationMs:number;
   expectedFrameCount:number;

@@ -236,6 +236,9 @@ export default async function ProjectWizardPage(props: {
           <Link className="secondaryButton linkButton" href={`/app/projects/${projectId}/review`}>
             Review &amp; comments
           </Link>
+          <Link className="secondaryButton linkButton" href={`/app/projects/${projectId}/delivery`}>
+            Formats, editors &amp; beat markers
+          </Link>
           {projectAccess?.canManageCollaborators ? (
             <Link className="secondaryButton linkButton" href={`/app/projects/${projectId}/share`}>
               Share project

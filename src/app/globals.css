@@ -3039,3 +3039,4 @@ h1 {
 .reviewComment.resolved { opacity: 0.6; }
 .reviewCommentForm { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end; margin: 0.5rem 0; }
 .reviewCommentForm textarea { min-width: min(100%, 28rem); }
+.markerList { max-height: 18rem; overflow: auto; columns: 2 14rem; }

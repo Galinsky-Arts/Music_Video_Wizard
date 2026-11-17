@@ -215,7 +215,7 @@ export function buildFfmpegRenderCommand(input:{
     "-c:v","libx264",
     "-threads","1",
     "-preset","veryfast",
-    "-crf","18",
+    "-crf",String(manifest.output.crf??18),
     "-pix_fmt",manifest.output.pixelFormat,
     "-r",fpsValue(manifest.output.frameRate),
     "-c:a","aac",

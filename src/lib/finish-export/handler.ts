@@ -78,7 +78,24 @@ export async function handleFinalMasterRender(
   job:GenerationJob,
   context:GenerationHandlerContext
 ){
+  return handleRender(job,context);
+}
+
+/** Alternate-format delivery renders reuse the verified master pipeline. */
+export async function handleDeliveryVariantRender(
+  job:GenerationJob,
+  context:GenerationHandlerContext
+){
+  return handleRender(job,context);
+}
+
+async function handleRender(
+  job:GenerationJob,
+  context:GenerationHandlerContext
+){
   const queued=queuedMasterRenderSchema.parse(job.requestSnapshot);
+  const isVariant=Boolean(queued.variant);
+  const renderKind=isVariant?AssetKind.DELIVERY_VARIANT:AssetKind.RENDER_MASTER;
   const already=await existingOutput(job.id);
   if(already) return already;
 
@@ -144,7 +161,7 @@ export async function handleFinalMasterRender(
     where:{
       id:queued.renderAssetId,
       projectId:queued.projectId,
-      kind:AssetKind.RENDER_MASTER
+      kind:renderKind
     },
     include:{
       versions:{orderBy:{versionNumber:"desc"}}
@@ -318,7 +335,8 @@ export async function handleFinalMasterRender(
             durationMs:verified.durationMs,
             frameRate:verified.frameRate,
             metadata:toJson({
-              role:"render-master",
+              role:isVariant?"delivery-variant":"render-master",
+              variant:queued.variant??null,
               manifestFingerprint:queued.manifestFingerprint,
               sourceTimelineVersionId:
                 queued.manifest.sourceTimelineVersionId,
@@ -363,7 +381,7 @@ export async function handleFinalMasterRender(
           }
         });
 
-        await completeAutomaticWizardStepInTransaction(tx,{
+        if(!isVariant) await completeAutomaticWizardStepInTransaction(tx,{
           projectVersionId:queued.manifest.projectVersionId,
           stepKey:"finish-export",
           payload:toJson({

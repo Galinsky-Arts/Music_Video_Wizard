@@ -10,7 +10,7 @@ import { stopJobQueue } from "../src/lib/jobs/queue";
 
 // Paid-provider calls are deliberately absent. Planning/generation acceptance is separate.
 test("locked edit renders through the durable queue and downloads a verified master", async ({ page, browser }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(240_000);
   const marker = Date.now() + "-" + Math.random().toString(16).slice(2);
   const account = await page.request.post("/api/auth/sign-up/email", { data: {
     name: "Final export E2E", email: `export-${marker}@example.test`, password: "Browser-E2E-Password-2026!"
@@ -61,6 +61,31 @@ test("locked edit renders through the durable queue and downloads a verified mas
     await expect(page.getByRole("button", { name: /Finish & export LOCKED/ })).toBeVisible();
     await page.reload();
     await expect(link).toBeVisible();
+    // Alternate format (plan PR 26): vertical reframe of the same locked edit through the same queue.
+    const deliveryEndpoint = `/api/projects/${fixture.projectId}/delivery`;
+    const variantResponse = await page.request.post(deliveryEndpoint, { data: { presetKey: "vertical-1080", framingMode: "fill", focusOverrides: { "0": { focusX: 0.3 } } } });
+    expect(variantResponse.status(), await variantResponse.text()).toBe(200);
+    const variantJob = await variantResponse.json() as { jobId: string };
+    await drainGenerationQueueBatch(16);
+    const variantRun = await db.generationJob.findUniqueOrThrow({ where: { id: variantJob.jobId } });
+    expect(variantRun.status, variantRun.errorMessage ?? "variant status").toBe("SUCCEEDED");
+    const variant = await db.assetVersion.findUniqueOrThrow({ where: { id: variantJob.jobId }, include: { asset: true } });
+    expect(variant).toMatchObject({ width: 1080, height: 1920, durationMs: 3000 });
+    expect(variant.asset.kind).toBe("DELIVERY_VARIANT");
+    expect(await db.assetVersion.count({ where: { assetId: master.assetId } })).toBe(1);
+    const listing = await (await page.request.get(deliveryEndpoint)).json() as { variants: { presetKey: string }[] };
+    expect(listing.variants.map(entry => entry.presetKey)).toEqual(["vertical-1080"]);
+    // Interchange export for outside editors.
+    const fcpxml = await page.request.get(`/api/projects/${fixture.projectId}/interchange?format=fcpxml`);
+    expect(fcpxml.status()).toBe(200);
+    const xml = await fcpxml.text();
+    expect(xml).toMatch(/^<\?xml[^]*<fcpxml version="1\.9">[^]*<spine>[^]*<\/fcpxml>\n$/);
+    expect((xml.match(/<asset-clip [^>]*offset=/g) ?? []).length).toBe(4); // 3 shots + music
+    const edl = await (await page.request.get(`/api/projects/${fixture.projectId}/interchange?format=edl`)).text();
+    expect(edl.split("\n").filter(line => /^\d{3}  /.test(line))).toHaveLength(4);
+    const media = await (await page.request.get(`/api/projects/${fixture.projectId}/interchange?format=manifest`)).json() as { clips: { downloadUrl: string }[] };
+    expect(media.clips.length).toBeGreaterThan(0);
+    expect((await page.request.get(media.clips[0]!.downloadUrl)).status()).toBe(200);
     const stranger = await browser.newContext();
     let otherUserId: string | undefined;
     try {
@@ -71,6 +96,7 @@ test("locked edit renders through the durable queue and downloads a verified mas
       } });
       expect(otherAccount.ok()).toBe(true);
       otherUserId = ((await otherAccount.json()) as { user: { id: string } }).user.id;
+      expect((await stranger.request.get(`/api/projects/${fixture.projectId}/interchange?format=edl`)).status()).toBeGreaterThanOrEqual(400);
       const other = await stranger.request.get(endpoint);
       expect(other.status()).toBeGreaterThanOrEqual(400);
       expect(await other.text()).not.toContain(master.storageKey);
