@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { cancelGenerationJob } from "@/lib/jobs/service";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export async function POST(
   request: Request,
@@ -15,11 +16,7 @@ export async function POST(
   const job = await db.generationJob.findFirst({
     where: {
       id: jobId,
-      workspace: {
-        memberships: {
-          some: { userId: session.user.id }
-        }
-      }
+      OR: [{ workspace: { memberships: { some: { userId: session.user.id } } } }, { project: projectEditorWhere(session.user.id) }]
     },
     select: { id: true }
   });

@@ -5,6 +5,7 @@ import { createAssetStorage } from "@/lib/storage";
 import { registerDependencyEdgeInTransaction } from "@/lib/dependency-graph/service";
 import { ensureWizardProgress } from "@/lib/wizard/service";
 import { narrativePlanSchema, type NarrativePlan } from "./plan";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 export class NarrativeError extends Error { constructor(message: string, public readonly status = 400) { super(message); } }
 const wherePlan = (projectId: string) => ({ asset: { projectId, kind: "OTHER" as const }, metadata: { path: ["role"], equals: "narrative-plan" } });
 export async function getNarrativePlan(input: { userId: string; projectId: string }) {
@@ -25,7 +26,7 @@ export async function saveNarrativePlan(input: { userId: string; projectId: stri
   const storage = createAssetStorage(); await storage.put({ key, body: bytes, contentType: "application/json" });
   try {
     return await db.$transaction(async tx => {
-      const access = await tx.project.findFirst({ where: { id: input.projectId, archivedAt: null, workspace: { memberships: { some: { userId: input.userId } } } } });
+      const access = await tx.project.findFirst({ where: { id: input.projectId, archivedAt: null, ...projectEditorWhere(input.userId) } });
       if (!access) throw new NarrativeError("Project unavailable.", 404);
       const current = await tx.projectVersion.findUnique({ where: { id: project.id }, include: { audioMasterAssetVersion: true } });
       if (current?.audioMasterAssetVersionId !== audio.id || current.audioMasterAssetVersion?.durationMs !== plan.durationMs) throw new NarrativeError("The soundtrack changed. Reload before saving.", 409);

@@ -24,6 +24,7 @@ import {
   lockedVideoClipSources,
   videoClipAssetsForProject
 } from "./source";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class VideoClipsError extends Error{}
 export class VideoClipsConflictError extends VideoClipsError{}
@@ -58,7 +59,7 @@ async function mutationContext(tx:Prisma.TransactionClient,input:{
       projectVersionId:input.projectVersionId,
       projectVersion:{
         projectId:input.projectId,
-        project:{workspace:{memberships:{some:{userId:input.userId}}}}
+        project:{...projectEditorWhere(input.userId)}
       }
     },
     include:{projectVersion:true,steps:true}

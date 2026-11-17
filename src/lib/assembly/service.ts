@@ -11,10 +11,11 @@ import { runMediaProcess } from "@/lib/media/process";
 import { MediaImportError, detectImportedMedia, probeImportedMedia } from "@/lib/media-imports/probe";
 import { registerDependencyEdgeInTransaction } from "@/lib/dependency-graph/service";
 import { initializeWorkingTimeline } from "@/lib/refinement/service";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 async function requireFreshProject(tx: Prisma.TransactionClient, projectVersionId: string, revision: number, userId: string) {
   const progress = await tx.wizardProgress.findFirst({ where: { projectVersionId, projectVersion: { project: {
-    archivedAt: null, workspace: { memberships: { some: { userId } } }
+    archivedAt: null, ...projectEditorWhere(userId)
   } } }, include: { steps: true, projectVersion: true } });
   if (!progress) throw new MediaImportError("Project unavailable.", 404);
   if (progress.revision !== revision) throw new MediaImportError("The project changed. Refresh before importing the edit.", 409);

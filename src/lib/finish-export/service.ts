@@ -25,6 +25,7 @@ import {
   type RenderManifest,
   type RenderSourceTransition
 } from "./manifest";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class FinishExportError extends Error{}
 export class FinishExportConflictError extends FinishExportError{}
@@ -63,7 +64,7 @@ async function mutationContext(tx:Tx,input:{
       projectVersionId:input.projectVersionId,
       projectVersion:{
         projectId:input.projectId,
-        project:{workspace:{memberships:{some:{userId:input.userId}}}}
+        project:{...projectEditorWhere(input.userId)}
       }
     },
     include:{projectVersion:true,steps:true}

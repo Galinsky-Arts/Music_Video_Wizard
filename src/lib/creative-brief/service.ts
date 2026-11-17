@@ -20,6 +20,7 @@ import {
   saveManagedWizardStepInTransaction,
   WizardLockedError
 } from "@/lib/wizard/service";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class CreativeBriefError extends Error {}
 export class CreativeBriefConflictError extends CreativeBriefError {}
@@ -212,11 +213,7 @@ async function mutationContext(
       creativeBrief: {
         projectId: input.projectId,
         project: {
-          workspace: {
-            memberships: {
-              some: { userId: input.userId }
-            }
-          }
+          ...projectEditorWhere(input.userId)
         }
       }
     }
@@ -239,11 +236,7 @@ async function mutationContext(
       projectVersion: {
         projectId: input.projectId,
         project: {
-          workspace: {
-            memberships: {
-              some: { userId: input.userId }
-            }
-          }
+          ...projectEditorWhere(input.userId)
         }
       }
     },
@@ -632,11 +625,7 @@ export async function getCreativeBriefState(input: {
     where: {
       id: input.projectId,
       archivedAt: null,
-      workspace: {
-        memberships: {
-          some: { userId: input.userId }
-        }
-      }
+      ...projectEditorWhere(input.userId)
     },
     select: {
       id: true,

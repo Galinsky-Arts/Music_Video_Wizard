@@ -34,6 +34,7 @@ import {
   queuedConceptGenerationSchema,
   type QueuedConceptGeneration
 } from "./input";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class ConceptError extends Error {}
 export class ConceptConflictError extends ConceptError {}
@@ -390,11 +391,7 @@ async function mutationContext(
       conceptSet: {
         projectId: input.projectId,
         project: {
-          workspace: {
-            memberships: {
-              some: { userId: input.userId }
-            }
-          }
+          ...projectEditorWhere(input.userId)
         }
       }
     }
@@ -415,11 +412,7 @@ async function mutationContext(
       projectVersion: {
         projectId: input.projectId,
         project: {
-          workspace: {
-            memberships: {
-              some: { userId: input.userId }
-            }
-          }
+          ...projectEditorWhere(input.userId)
         }
       }
     },
@@ -577,11 +570,7 @@ export async function queueConceptGeneration(input: {
   const context = await db.project.findFirst({
     where: {
       id: input.projectId,
-      workspace: {
-        memberships: {
-          some: { userId: input.userId }
-        }
-      }
+      ...projectEditorWhere(input.userId)
     },
     select: {
       workspaceId: true,
@@ -1155,11 +1144,7 @@ export async function getConceptState(input: {
     where: {
       id: input.projectId,
       archivedAt: null,
-      workspace: {
-        memberships: {
-          some: { userId: input.userId }
-        }
-      }
+      ...projectEditorWhere(input.userId)
     },
     select: {
       id: true,

@@ -4,8 +4,14 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
+import { safeNextPath } from "@/lib/safe-next-path";
 
 type AuthMode = "sign-in" | "sign-up";
+
+function nextPath(): string {
+  if (typeof window === "undefined") return "/app";
+  return safeNextPath(new URLSearchParams(window.location.search).get("next"));
+}
 
 export function AuthForm({ mode }: { mode: AuthMode }) {
   const router = useRouter();
@@ -29,12 +35,12 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
               name,
               email,
               password,
-              callbackURL: "/app"
+              callbackURL: nextPath()
             })
           : await authClient.signIn.email({
               email,
               password,
-              callbackURL: "/app"
+              callbackURL: nextPath()
             });
 
       if (result.error) {
@@ -42,7 +48,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         return;
       }
 
-      router.replace("/app");
+      router.replace(nextPath() as "/app");
       router.refresh();
     } catch {
       setError("Authentication failed. Please try again.");

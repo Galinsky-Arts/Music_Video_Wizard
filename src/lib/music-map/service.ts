@@ -21,6 +21,7 @@ import {
   saveManagedWizardStepInTransaction,
   WizardLockedError
 } from "@/lib/wizard/service";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class MusicMapError extends Error {}
 export class MusicMapConflictError extends MusicMapError {}
@@ -345,11 +346,7 @@ async function mutationContext(
       musicMap: {
         projectId: input.projectId,
         project: {
-          workspace: {
-            memberships: {
-              some: { userId: input.userId }
-            }
-          }
+          ...projectEditorWhere(input.userId)
         }
       }
     },
@@ -382,11 +379,7 @@ async function mutationContext(
       projectVersion: {
         projectId: input.projectId,
         project: {
-          workspace: {
-            memberships: {
-              some: { userId: input.userId }
-            }
-          }
+          ...projectEditorWhere(input.userId)
         }
       }
     },
@@ -1157,11 +1150,7 @@ export async function getMusicMapState(input: {
     where: {
       id: input.projectId,
       archivedAt: null,
-      workspace: {
-        memberships: {
-          some: { userId: input.userId }
-        }
-      }
+      ...projectEditorWhere(input.userId)
     },
     select: {
       id: true,

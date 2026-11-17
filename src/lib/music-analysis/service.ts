@@ -25,6 +25,7 @@ import {
   musicAnalysisResultSchema,
   type MusicAnalysisResult
 } from "./result";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export const MUSIC_ANALYSIS_PROVIDER_KEY = "local-librosa";
 export const MUSIC_ANALYSIS_ENGINE_VERSION = "1.0.0";
@@ -360,11 +361,7 @@ export async function getMusicAnalysisState(input: {
     where: {
       id: input.projectId,
       archivedAt: null,
-      workspace: {
-        memberships: {
-          some: { userId: input.userId }
-        }
-      }
+      ...projectEditorWhere(input.userId)
     },
     select: {
       id: true,

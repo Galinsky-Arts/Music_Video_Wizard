@@ -12,13 +12,14 @@ import { completeInitialFramesIfCovered } from "@/lib/initial-frames/service";
 import { completeVideoClipsIfCovered } from "@/lib/video-clips/service";
 import { registerDependencyEdgeInTransaction } from "@/lib/dependency-graph/service";
 import { MediaImportError, detectImportedMedia, probeImportedMedia } from "./probe";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 type ImportInput = { userId: string; projectId: string; kind: "image" | "video"; shotSpecificationVersionId: string;
   expectedWizardRevision: number; bytes: Uint8Array; originalFileName: string };
 
 async function context(tx: Prisma.TransactionClient, input: Omit<ImportInput, "bytes" | "originalFileName">, projectVersionId: string) {
   const progress = await tx.wizardProgress.findFirst({ where: { projectVersionId, projectVersion: {
-    projectId: input.projectId, lifecycle: "DRAFT", project: { workspace: { memberships: { some: { userId: input.userId } } } }
+    projectId: input.projectId, lifecycle: "DRAFT", project: { ...projectEditorWhere(input.userId) }
   } }, include: { steps: true, projectVersion: { include: { project: true } } } });
   if (!progress) throw new MediaImportError("Project is unavailable for editing.", 404);
   if (progress.revision !== input.expectedWizardRevision) throw new MediaImportError("The project changed. Refresh before importing media.", 409);

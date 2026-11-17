@@ -73,6 +73,7 @@ jobs:
       - run: npm run test:library
       - run: npm run test:kits
       - run: npm run test:wizard
+      - run: npm run test:collaboration
       - run: npm run test:analysis
       - run: npm run test:map
       - run: npm run test:brief

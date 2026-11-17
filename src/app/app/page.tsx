@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ensurePersonalWorkspace } from "@/lib/workspaces";
+import { listSharedProjects } from "@/lib/collaboration/service";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ProjectPackageRestore } from "@/components/project-package-restore";
 
@@ -19,6 +20,7 @@ export default async function AppHomePage() {
     session.user.name
   );
 
+  const shared = await listSharedProjects(session.user.id);
   const projects = await db.project.findMany({
     where: {
       workspaceId: workspace.id,
@@ -107,6 +109,31 @@ export default async function AppHomePage() {
           </div>
         )}
       </section>
+
+      {shared.length > 0 ? (
+        <section className="projectSection" aria-labelledby="shared-heading">
+          <div className="sectionHeading">
+            <h2 id="shared-heading">Shared with you</h2>
+            <span>{shared.length}</span>
+          </div>
+          <div className="projectGrid">
+            {shared.map((entry) => (
+              <Link
+                className="projectCard"
+                href={entry.role === "EDITOR" ? `/app/projects/${entry.project.id}/wizard` : `/app/projects/${entry.project.id}/review`}
+                key={entry.project.id}
+              >
+                <h3>{entry.project.title}</h3>
+                <p>{entry.project.description || "No description"}</p>
+                <div className="projectMeta">
+                  <span>{entry.role.toLowerCase()}</span>
+                  {entry.expiresAt ? <span>until {entry.expiresAt.toLocaleDateString()}</span> : null}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }

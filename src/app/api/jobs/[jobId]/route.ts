@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export async function GET(
   request: Request,
@@ -14,11 +15,7 @@ export async function GET(
   const job = await db.generationJob.findFirst({
     where: {
       id: jobId,
-      workspace: {
-        memberships: {
-          some: { userId: session.user.id }
-        }
-      }
+      OR: [{ workspace: { memberships: { some: { userId: session.user.id } } } }, { project: projectEditorWhere(session.user.id) }]
     },
     include: {
       events: {

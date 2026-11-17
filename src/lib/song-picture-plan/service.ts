@@ -30,6 +30,7 @@ import {
   songPicturePlanDraftSchema,
   type SongPicturePlanDraft
 } from "./schema";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class SongPicturePlanError extends Error {}
 export class SongPicturePlanConflictError extends SongPicturePlanError {}
@@ -199,7 +200,7 @@ async function mutationContext(tx:Tx,input:{
       id:input.songPicturePlanVersionId,
       songPicturePlan:{
         projectId:input.projectId,
-        project:{workspace:{memberships:{some:{userId:input.userId}}}}
+        project:{...projectEditorWhere(input.userId)}
       }
     }
   });
@@ -436,7 +437,7 @@ export async function lockSongPicturePlan(input:{
 
 export async function getSongPicturePlanState(input:{userId:string;projectId:string}){
   const project=await db.project.findFirst({
-    where:{id:input.projectId,workspace:{memberships:{some:{userId:input.userId}}}},
+    where:{id:input.projectId,...projectEditorWhere(input.userId)},
     include:{
       treatment:{include:{versions:{orderBy:{versionNumber:"desc"},take:1,include:{sourceConceptSetVersion:{include:{sourceCreativeBriefVersion:true}}}}}},
       creativeLanguage:{include:{versions:{orderBy:{versionNumber:"desc"},take:1}}},

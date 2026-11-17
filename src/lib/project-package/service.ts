@@ -21,6 +21,7 @@ import {
   type ProjectPackageManifest
 } from "./manifest";
 import { extractTar, tarEnd, tarHeader, tarPadding } from "./tar";
+import { projectEditorWhere } from "@/lib/collaboration/access";
 
 export class ProjectPackageError extends Error{}
 
@@ -45,7 +46,7 @@ function safeFileName(title:string){
 /** Snapshot of the latest project version, its wizard state and every READY asset. */
 export async function prepareProjectPackage(input:{userId:string;projectId:string}):Promise<PreparedProjectPackage>{
   const project=await db.project.findFirst({
-    where:{id:input.projectId,workspace:{memberships:{some:{userId:input.userId}}}},
+    where:{id:input.projectId,...projectEditorWhere(input.userId)},
     include:{
       versions:{
         orderBy:{versionNumber:"desc"},
